@@ -10,4 +10,5 @@ export interface Slide {
   services?: Service[];
   note?: string;
   videoId?: string;
+  videoIds?: string[];
 }

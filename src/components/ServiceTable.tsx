@@ -20,7 +20,7 @@ export default function ServiceTable({ services, type }: ServiceTableProps) {
             {headers[type].map((header, idx) => (
               <th
                 key={idx}
-                className={`px-6 py-4 text-white font-black text-3xl tracking-wide ${
+                className={`px-3 md:px-6 py-2 md:py-4 text-white font-black text-xl md:text-3xl tracking-wide ${
                   idx === 2 ? 'text-right' : 'text-left'
                 }`}
               >
@@ -35,13 +35,13 @@ export default function ServiceTable({ services, type }: ServiceTableProps) {
               key={idx}
               className="border-b-2 border-slate-100 hover:bg-blue-50/50 transition-colors duration-200"
             >
-              <td className="px-6 py-5 text-3xl font-semibold text-slate-800">
+              <td className="px-3 md:px-6 py-3 md:py-5 text-xl md:text-3xl font-semibold text-slate-800">
                 {service.name}
               </td>
-              <td className="px-6 py-5 text-3xl font-medium text-slate-600">
+              <td className="px-3 md:px-6 py-3 md:py-5 text-xl md:text-3xl font-medium text-slate-600">
                 {service.max}
               </td>
-              <td className="px-6 py-5 text-right text-3xl font-black text-blue-700">
+              <td className="px-3 md:px-6 py-3 md:py-5 text-right text-xl md:text-3xl font-black text-blue-700">
                 {service.price}
               </td>
             </tr>

@@ -1,0 +1,13 @@
+- [x] Update src/types/index.ts to change videoId to videoIds array
+- [x] Update src/data/services.ts to include array of top music video IDs
+- [x] Update src/components/Carousel.tsx to randomly select videoId from array
+- [x] Update src/components/YouTubePlayer.tsx to enable autoplay (removed mute for audio)
+- [x] Make the app responsive for all devices, focusing on 50-inch screens
+- [x] Create professional footer with contact info, social links, business hours, location
+- [x] Improve footer visibility and responsiveness for smaller screens (15-inch and up)
+- [x] Fix carousel auto-advance functionality
+- [x] Force video play on slide appearance for kiosk mode (added enablejsapi and delayed playVideo)
+- [x] Add logo image back to Header.tsx with blur effect to look more like a created logo
+- [x] Convert Header.tsx layout to use table with 3 columns (left: text, center: washing machine animation, right: kiosk mode)
+- [x] Add logo to browser tab favicon
+- [ ] Test the application with npm run dev
