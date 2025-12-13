@@ -7,9 +7,9 @@ interface ServiceTableProps {
 
 export default function ServiceTable({ services, type }: ServiceTableProps) {
   const headers = {
-    wash: ['Servicio', 'Máximo', 'Precio'],
-    dry: ['Tiempo', 'Máximo', 'Precio'],
-    complete: ['Servicio', 'Máximo', 'Precio'],
+    wash: ['Servicio', 'Canasta Máximo', 'Precio'],
+    dry: ['Tiempo', 'Canasta Máximo', 'Precio'],
+    complete: ['Servicio', 'Canasta Máximo', 'Precio'],
   };
 
   return (

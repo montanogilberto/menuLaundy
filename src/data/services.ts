@@ -40,10 +40,10 @@ export const slides: Slide[] = [
     type: 'service',
     title: 'SERVICIO DE LAVADO',
     services: [
-      { name: 'Básico', max: '08 kg', price: '$40' },
-      { name: 'Medio', max: '10 kg', price: '$50' },
-      { name: 'Carga Alta', max: '12 kg', price: '$60' },
-      { name: 'Colchas Grandes', max: '18 kg', price: '$100' },
+      { name: 'Básico', max: 'Chica', price: '$40' },
+      { name: 'Medio', max: 'Media', price: '$50' },
+      { name: 'Carga Alta', max: 'Grande', price: '$70' },
+      { name: 'Colchas Grandes', max: 'Variable', price: '$100' },
     ],
     note: 'Precios no incluyen producto.',
   },
@@ -51,10 +51,10 @@ export const slides: Slide[] = [
     type: 'service',
     title: 'SERVICIO DE SECADO',
     services: [
-      { name: '40 min', max: '08 kg', price: '$60' },
-      { name: '50 min', max: '10 kg', price: '$65' },
-      { name: '60 min', max: '12 kg', price: '$70' },
-      { name: 'Colchas Grandes', max: '18 kg', price: '$100' },
+      { name: '40 min', max: 'Chica', price: '$60' },
+      { name: '50 min', max: 'Media', price: '$70' },
+      { name: '60 min', max: 'Grande', price: '$80' },
+      { name: 'Colchas Grandes', max: 'Variable', price: '$100' },
     ],
   },
   {
@@ -65,10 +65,10 @@ export const slides: Slide[] = [
     type: 'service',
     title: 'SERVICIO COMPLETO',
     services: [
-      { name: 'Básico', max: '08 kg', price: '$160' },
-      { name: 'Medio', max: '10 kg', price: '$175' },
-      { name: 'Carga Alta', max: '12 kg', price: '$190' },
-      { name: 'Colchas Grandes', max: '18 kg', price: '$260' },
+      { name: 'Básico', max: 'Chica', price: '$160' },
+      { name: 'Medio', max: 'Media', price: '$180' },
+      { name: 'Carga Alta', max: 'Grande', price: '$230' },
+      { name: 'Colchas Grandes', max: 'Variable', price: '$260' },
     ],
     note: '<strong>Incluye:</strong> Lavado + Secado + Doblado + Jabón y Suavitel<br>🕒 Entrega: 3 horas',
   },
@@ -77,14 +77,14 @@ export const slides: Slide[] = [
 export const extras = 'Ensueño Max • Vanish • Ariel • Persil • Foca • Member\'s Mark • Cloro';
 
 export const contactInfo = {
-  phone: '+52 55 1234 5678',
+  phone: '+52 6626513670',
   email: 'info@gmolavanderia.com',
-  address: 'Av. Principal 123, Ciudad de México, CDMX',
+  address: 'Blvd. Musaro 1 B, Nuevo Hermosillo, 83296 Hermosillo, Son.',
 };
 
 export const businessHours = [
-  { day: 'Lunes - Viernes', hours: '8:00 AM - 8:00 PM' },
-  { day: 'Sábado', hours: '9:00 AM - 6:00 PM' },
+  { day: 'Lunes - Viernes', hours: '9:00 AM - 01:00 PM - 04:00 PM - 8:00 PM' },
+  { day: 'Sábado', hours: '9:00 AM - 5:00 PM' },
   { day: 'Domingo', hours: 'Cerrado' },
 ];
 
