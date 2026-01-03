@@ -68,7 +68,7 @@ export const slides: Slide[] = [
     services: [
       { name: 'Básico', max: '6 Prendas Aprox', maxDescription: 'Lavado express 20 min aprox', price: '$160' },
       { name: 'Medio', max: 'Chica', maxDescription: 'Nivel de Agua Medio', price: '$180' },
-      { name: 'Carga Alta', max: 'Media', maxDescription: 'Nivel de Agua Completo', price: '$230' },
+      { name: 'Carga Alta', max: 'Media', maxDescription: 'Nivel de Agua Completo', price: '$210' },
       { name: 'Colchas Grandes', max: 'Variable', price: '$260' },
     ],
     note: '<strong>Incluye:</strong> Lavado + Secado + Doblado + Jabón y Suavitel<br>🕒 Entrega: 3 horas',
