@@ -1,6 +1,7 @@
 export interface Service {
   name: string;
   max: string;
+  maxDescription?: string;
   price: string;
 }
 

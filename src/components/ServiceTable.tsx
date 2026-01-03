@@ -38,8 +38,15 @@ export default function ServiceTable({ services, type }: ServiceTableProps) {
               <td className="px-3 md:px-6 py-3 md:py-5 text-xl md:text-3xl font-semibold text-slate-800">
                 {service.name}
               </td>
-              <td className="px-3 md:px-6 py-3 md:py-5 text-xl md:text-3xl font-medium text-slate-600">
-                {service.max}
+              <td className="px-3 md:px-6 py-3 md:py-5">
+                <div className="text-xl md:text-3xl font-medium text-slate-800">
+                  {service.max}
+                </div>
+                {service.maxDescription && (
+                  <div className="text-xs md:text-sm font-normal text-slate-500">
+                    {service.maxDescription}
+                  </div>
+                )}
               </td>
               <td className="px-3 md:px-6 py-3 md:py-5 text-right text-xl md:text-3xl font-black text-blue-700">
                 {service.price}

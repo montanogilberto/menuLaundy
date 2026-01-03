@@ -46,11 +46,7 @@ export default function Header() {
                 <div className="absolute inset-1 bg-blue-50/30 rounded-full border-2 border-blue-300/50"></div>
               </div>
             </td>
-            <td className="px-4 md:px-8 py-4 md:py-6 text-right align-middle">
-              <div className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 md:px-6 py-2 md:py-3 rounded-2xl font-black text-sm md:text-xl shadow-lg border-2 border-blue-300 inline-block">
-                Pantalla 50" • Modo Kiosko
-              </div>
-            </td>
+   
           </tr>
         </tbody>
       </table>
