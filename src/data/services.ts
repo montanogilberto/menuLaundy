@@ -52,9 +52,9 @@ export const slides: Slide[] = [
     type: 'service',
     title: 'SERVICIO DE SECADO',
     services: [
-      { name: '40 min', max: '6 prendas', price: '$60' },
-      { name: '50 min', max: 'Tina Media', price: '$70' },
-      { name: '60 min', max: 'Tina Completa', price: '$80' },
+      { name: '30 min', max: '6 prendas', price: '$60' },
+      { name: '40 min', max: 'Tina Media', price: '$70' },
+      { name: '50 min', max: 'Tina Completa', price: '$80' },
       { name: 'Colchas Grandes', max: 'Variable', price: '$100' },
     ],
   },

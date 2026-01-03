@@ -25,28 +25,6 @@ export default function Header() {
                 </div>
               </div>
             </td>
-            <td className="px-4 md:px-8 py-4 md:py-6 align-middle text-center">
-              {/* Washing Machine Animation */}
-              <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto">
-                {/* Outer drum */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-200 to-blue-400 rounded-full border-4 border-blue-500 shadow-lg flex items-center justify-center">
-                  {/* Inner rotating drum */}
-                  <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-blue-100 to-blue-300 rounded-full border-2 border-blue-400 relative overflow-hidden animate-spin" style={{animationDuration: '3s'}}>
-                    {/* Water waves */}
-                    <div className="absolute top-1 left-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div className="absolute top-3 right-2 w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse delay-300"></div>
-                    <div className="absolute bottom-2 left-2 w-1 h-1 bg-blue-700 rounded-full animate-pulse delay-700"></div>
-                    {/* Clothes */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-1 h-1 bg-white rounded-full animate-bounce"></div>
-                    </div>
-                  </div>
-                </div>
-                {/* Glass door */}
-                <div className="absolute inset-1 bg-blue-50/30 rounded-full border-2 border-blue-300/50"></div>
-              </div>
-            </td>
-   
           </tr>
         </tbody>
       </table>
