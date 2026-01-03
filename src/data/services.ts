@@ -35,14 +35,15 @@ export const getCurrentMusicSelection = () => {
   };
 };
 
+
 export const slides: Slide[] = [
   {
     type: 'service',
     title: 'SERVICIO DE LAVADO',
     services: [
-      { name: 'Básico', max: 'Chica 20 min', price: '$40' },
-      { name: 'Medio', max: 'Media 40 min', price: '$50' },
-      { name: 'Carga Alta', max: 'Grande 60 min', price: '$70' },
+      { name: 'Básico', max: '6 prendas - 20 min', price: '$40' },
+      { name: 'Medio', max: 'Chica - Tina Media', price: '$50' },
+      { name: 'Carga Alta', max: 'Media - Tina Completa', price: '$70' },
       { name: 'Colchas Grandes', max: 'Variable', price: '$100' },
     ],
     note: 'Precios no incluyen producto.',
@@ -51,9 +52,9 @@ export const slides: Slide[] = [
     type: 'service',
     title: 'SERVICIO DE SECADO',
     services: [
-      { name: '40 min', max: 'Chica', price: '$60' },
-      { name: '50 min', max: 'Media', price: '$70' },
-      { name: '60 min', max: 'Grande', price: '$80' },
+      { name: '40 min', max: '6 prendas', price: '$60' },
+      { name: '50 min', max: 'Tina Media', price: '$70' },
+      { name: '60 min', max: 'Tina Completa', price: '$80' },
       { name: 'Colchas Grandes', max: 'Variable', price: '$100' },
     ],
   },
@@ -65,9 +66,9 @@ export const slides: Slide[] = [
     type: 'service',
     title: 'SERVICIO COMPLETO',
     services: [
-      { name: 'Básico', max: 'Chica 20 min', price: '$160' },
-      { name: 'Medio', max: 'Media 40 min', price: '$180' },
-      { name: 'Carga Alta', max: 'Grande 60 min', price: '$230' },
+      { name: 'Básico', max: '6 prendas - 20 min', price: '$160' },
+      { name: 'Medio', max: 'Chica - Tina Media', price: '$180' },
+      { name: 'Carga Alta', max: 'Media - Tina Completa', price: '$230' },
       { name: 'Colchas Grandes', max: 'Variable', price: '$260' },
     ],
     note: '<strong>Incluye:</strong> Lavado + Secado + Doblado + Jabón y Suavitel<br>🕒 Entrega: 3 horas',
