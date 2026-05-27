@@ -13,3 +13,17 @@ export interface Slide {
   videoId?: string;
   videoIds?: string[];
 }
+
+export interface TicketItem {
+  category: 'Lavado' | 'Secado' | 'Servicio Completo';
+  serviceName: string;
+  basket: string;
+  price: number;
+}
+
+export interface Ticket {
+  id: string;
+  createdAt: string;
+  items: TicketItem[];
+  note?: string;
+}

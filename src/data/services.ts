@@ -1,4 +1,4 @@
-import { Slide } from '../types';
+import { Slide, Ticket } from '../types';
 
 // Live music videos that rotate every 20 minutes
 export const liveMusicVideos = [
@@ -94,3 +94,14 @@ export const socialLinks = [
   { name: 'Instagram', url: 'https://instagram.com/gmolavanderia', icon: 'Instagram' },
   { name: 'WhatsApp', url: 'https://wa.me/525512345678', icon: 'MessageCircle' },
 ];
+
+export const sampleTicket: Ticket = {
+  id: 'TKT-2024-0001',
+  createdAt: new Date().toISOString(),
+  items: [
+    { category: 'Lavado', serviceName: 'Carga Alta', basket: 'Media', price: 70 },
+    { category: 'Secado', serviceName: '40 min', basket: 'Tina Media', price: 70 },
+    { category: 'Servicio Completo', serviceName: 'Básico', basket: '6 Prendas Aprox', price: 160 },
+  ],
+  note: 'Incluye: Lavado + Secado + Doblado + Jabón y Suavitel',
+};

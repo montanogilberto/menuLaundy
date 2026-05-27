@@ -13,14 +13,14 @@ export default function ServiceTable({ services, type }: ServiceTableProps) {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border-2 border-slate-200 shadow-lg">
-      <table className="w-full border-collapse">
+    <div className="overflow-x-auto rounded-2xl border-2 border-slate-200 shadow-lg">
+      <table className="w-full min-w-[520px] border-collapse">
         <thead>
           <tr className="bg-gradient-to-r from-slate-800 to-blue-900">
             {headers[type].map((header, idx) => (
               <th
                 key={idx}
-                className={`px-3 md:px-6 py-2 md:py-4 text-white font-black text-xl md:text-3xl tracking-wide ${
+                className={`px-3 md:px-6 py-2 md:py-4 text-white font-black text-sm sm:text-lg md:text-3xl tracking-wide ${
                   idx === 2 ? 'text-right' : 'text-left'
                 }`}
               >
@@ -35,20 +35,20 @@ export default function ServiceTable({ services, type }: ServiceTableProps) {
               key={idx}
               className="border-b-2 border-slate-100 hover:bg-blue-50/50 transition-colors duration-200"
             >
-              <td className="px-3 md:px-6 py-3 md:py-5 text-xl md:text-3xl font-semibold text-slate-800">
+              <td className="px-3 md:px-6 py-3 md:py-5 text-sm sm:text-lg md:text-3xl font-semibold text-slate-800 whitespace-nowrap">
                 {service.name}
               </td>
-              <td className="px-3 md:px-6 py-3 md:py-5">
-                <div className="text-xl md:text-3xl font-medium text-slate-800">
+              <td className="px-3 md:px-6 py-3 md:py-5 min-w-[180px]">
+                <div className="text-sm sm:text-lg md:text-3xl font-medium text-slate-800">
                   {service.max}
                 </div>
                 {service.maxDescription && (
-                  <div className="text-xs md:text-sm font-normal text-slate-500">
+                  <div className="text-[10px] sm:text-xs md:text-sm font-normal text-slate-500">
                     {service.maxDescription}
                   </div>
                 )}
               </td>
-              <td className="px-3 md:px-6 py-3 md:py-5 text-right text-xl md:text-3xl font-black text-blue-700">
+              <td className="px-3 md:px-6 py-3 md:py-5 text-right text-sm sm:text-lg md:text-3xl font-black text-blue-700 whitespace-nowrap">
                 {service.price}
               </td>
             </tr>
