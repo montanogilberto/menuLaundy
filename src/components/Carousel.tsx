@@ -7,7 +7,7 @@ import YouTubePlayer from './YouTubePlayer';
 export default function Carousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioEnabled] = useState(true);
   const [slides, setSlides] = useState(staticSlides);
 
   // Update slides when music selection changes
@@ -57,10 +57,6 @@ export default function Carousel() {
     return 'wash';
   };
 
-  const getRandomVideoId = useCallback((videoIds: string[]) => {
-    const randomIndex = Math.floor(Math.random() * videoIds.length);
-    return videoIds[randomIndex];
-  }, []);
 
   // Force video change only when video selection changes, not on every slide visit
   const [currentVideoId, setCurrentVideoId] = useState<string>('');

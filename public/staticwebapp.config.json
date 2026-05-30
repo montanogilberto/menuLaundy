@@ -1,0 +1,15 @@
+{
+  "routes": [
+    {
+      "route": "/r/*",
+      "redirect": "https://smartloansbackend.azurewebsites.net/r/:*",
+      "statusCode": 302
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/r/*"
+    ]
+  }
+}
