@@ -10,6 +10,7 @@ export interface Slide {
   title: string;
   services?: Service[];
   note?: string;
+  note2?: string;
   videoId?: string;
   videoIds?: string[];
 }

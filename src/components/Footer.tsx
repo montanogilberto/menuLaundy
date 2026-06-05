@@ -14,9 +14,7 @@ export default function Footer() {
         {/* Extras Marquee */}
         <div className="mb-3 md:mb-6 overflow-hidden">
           <div className="flex items-center gap-1 md:gap-2">
-            <strong className="text-white text-xs md:text-sm lg:text-lg whitespace-nowrap font-bold tracking-wide">
-              Extras opcionales: Ensueño Max • Vanish • Ariel • Persil • Foca • Member’s Mark • Cloro
-            </strong>
+            
             <div className="ticker relative w-full overflow-hidden">
               <span className="marquee absolute left-full whitespace-nowrap text-xs md:text-sm lg:text-lg font-medium">
                 {extras}

@@ -47,6 +47,8 @@ export const slides: Slide[] = [
       { name: 'Colchas Grandes', max: 'Variable', price: '$100' },
     ],
     note: 'Precios no incluyen producto.',
+    note2: 'opcionales: Ensueño Max • Vanish • Ariel • Persil • Foca • Member’s Mark • Cloro',
+
   },
   {
     type: 'service',

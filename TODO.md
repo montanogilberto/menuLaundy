@@ -1,4 +1,9 @@
-- [ ] Clean install dependencies (remove node_modules and lockfile, reinstall)
-- [ ] Run typecheck to validate JSX/@ionic/react/react-jsx-runtime resolution
-- [ ] If needed, update tsconfig.app.json types and re-run typecheck
-- [ ] Confirm dev server starts with npm run dev
+- [x] Add `@` path alias support in `vite.config.ts` and `tsconfig.app.json`
+- [x] Create shadcn-style utility file: `src/lib/utils.ts`
+- [x] Add `src/components/ui/radial-orbital-timeline.tsx`
+- [x] Replace `src/components/ui/demo.tsx` with Radial Orbital Timeline demo
+- [x] Add shadcn dependency components: `badge.tsx`, `button.tsx`, `card.tsx`
+- [x] Replace `DisplayCardsDemo` usage with `RadialOrbitalTimelineDemo` in `src/App.tsx`
+- [x] Extend `src/index.css` with provided timeline styles
+- [x] Install dependencies: `class-variance-authority`, `@radix-ui/react-slot`
+- [ ] Run verification build
