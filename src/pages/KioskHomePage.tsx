@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Search, Receipt } from 'lucide-react';
+import { Search, Receipt, Phone, AlertCircle, Loader2 } from 'lucide-react';
 import { slides } from '../data/services';
 import { Service } from '../types';
+import { findClientByPhone } from '../api/rewardsCheckApi';
+
+type ReceiptStep = 'idle' | 'enter_id' | 'enter_phone' | 'loading' | 'error';
 
 const wash    = slides.find(s => s.title.includes('LAVADO') && !s.title.includes('COMPLETO'));
 const dry     = slides.find(s => s.title.includes('SECADO'));
@@ -65,12 +68,39 @@ interface Props {
 }
 
 export default function KioskHomePage({ onViewReceipt }: Props) {
-  const [receiptInput, setReceiptInput] = useState('');
+  const [step, setStep]           = useState<ReceiptStep>('idle');
+  const [receiptId, setReceiptId] = useState('');
+  const [phone, setPhone]         = useState('');
+  const [errorMsg, setErrorMsg]   = useState('');
 
-  const handleReceiptSearch = () => {
-    const id = receiptInput.trim();
-    if (id) { onViewReceipt(id); setReceiptInput(''); }
+  const startFlow = () => {
+    const id = receiptId.trim();
+    if (id) setStep('enter_phone');
   };
+
+  const verifyAndOpen = async () => {
+    const id  = receiptId.trim();
+    const tel = phone.trim();
+    if (!id || !tel) return;
+    setStep('loading');
+    try {
+      const client = await findClientByPhone(tel);
+      if (client) {
+        setStep('idle');
+        setReceiptId('');
+        setPhone('');
+        onViewReceipt(id);
+      } else {
+        setErrorMsg('Número no encontrado. Verifica e intenta de nuevo.');
+        setStep('error');
+      }
+    } catch {
+      setErrorMsg('Error de conexión. Intenta más tarde.');
+      setStep('error');
+    }
+  };
+
+  const reset = () => { setStep('idle'); setReceiptId(''); setPhone(''); setErrorMsg(''); };
 
   return (
     <div className="min-h-full bg-gradient-to-br from-slate-100 to-blue-50 p-4 md:p-6 lg:p-8 flex flex-col gap-5">
@@ -95,30 +125,78 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
           <div className="flex items-center gap-2">
             <Receipt className="w-5 h-5 text-blue-600 shrink-0" />
             <p className="text-slate-800 font-black text-base md:text-lg">Ver mi Recibo</p>
-            <span className="text-slate-400 text-sm font-normal">· ingresa el número de tu ticket</span>
           </div>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">#</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={receiptInput}
-                onChange={e => setReceiptInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleReceiptSearch()}
-                placeholder="Ej. 4747"
-                className="w-full border-2 border-slate-200 focus:border-blue-500 rounded-xl pl-7 pr-3 py-2.5 text-lg font-semibold text-slate-800 outline-none transition-colors"
-              />
+
+          {/* Step 1 — receipt number */}
+          {(step === 'idle' || step === 'enter_id') && (
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">#</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={receiptId}
+                  onChange={e => { setReceiptId(e.target.value); setStep('enter_id'); }}
+                  onKeyDown={e => e.key === 'Enter' && startFlow()}
+                  placeholder="Número de ticket — Ej. 4747"
+                  className="w-full border-2 border-slate-200 focus:border-blue-500 rounded-xl pl-7 pr-3 py-2.5 text-lg font-semibold text-slate-800 outline-none transition-colors"
+                />
+              </div>
+              <button
+                onClick={startFlow}
+                disabled={!receiptId.trim()}
+                className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
+              >
+                Siguiente
+              </button>
             </div>
-            <button
-              onClick={handleReceiptSearch}
-              disabled={!receiptInput.trim()}
-              className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
-            >
-              <Search className="w-4 h-4" />
-              Ver
-            </button>
-          </div>
+          )}
+
+          {/* Step 2 — phone verification */}
+          {step === 'enter_phone' && (
+            <div className="flex flex-col gap-2">
+              <p className="text-slate-500 text-sm">Ticket <strong>#{receiptId}</strong> — ingresa tu número de celular para verificar:</p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && verifyAndOpen()}
+                    placeholder="10 dígitos"
+                    autoFocus
+                    className="w-full border-2 border-blue-300 focus:border-blue-500 rounded-xl pl-9 pr-3 py-2.5 text-lg font-semibold text-slate-800 outline-none transition-colors"
+                  />
+                </div>
+                <button onClick={verifyAndOpen} disabled={!phone.trim()}
+                  className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0">
+                  <Search className="w-4 h-4" /> Ver
+                </button>
+                <button onClick={reset} className="text-slate-400 hover:text-slate-600 text-sm px-2">Cancelar</button>
+              </div>
+            </div>
+          )}
+
+          {/* Loading */}
+          {step === 'loading' && (
+            <div className="flex items-center gap-2 text-slate-500 text-sm py-1">
+              <Loader2 className="w-4 h-4 animate-spin" /> Verificando...
+            </div>
+          )}
+
+          {/* Error */}
+          {step === 'error' && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {errorMsg}
+              </div>
+              <button onClick={reset} className="text-blue-600 hover:underline text-sm font-semibold self-start">
+                Intentar de nuevo
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
