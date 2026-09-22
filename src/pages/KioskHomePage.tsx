@@ -67,10 +67,17 @@ interface Props {
   onViewReceipt: (id: string) => void;
 }
 
+const COUNTRY_CODES = [
+  { flag: '🇲🇽', label: 'MX', code: '+52' },
+  { flag: '🇺🇸', label: 'US', code: '+1'  },
+  { flag: '🇨🇦', label: 'CA', code: '+1'  },
+];
+
 export default function KioskHomePage({ onViewReceipt }: Props) {
   const [step, setStep]           = useState<ReceiptStep>('idle');
   const [receiptId, setReceiptId] = useState('');
   const [phone, setPhone]         = useState('');
+  const [lada, setLada]           = useState('+52');
   const [errorMsg, setErrorMsg]   = useState('');
 
   const startFlow = () => {
@@ -84,7 +91,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
     if (!id || !tel) return;
     setStep('loading');
     try {
-      const client = await findClientByPhone(tel);
+      const client = await findClientByPhone(lada + tel);
       if (client) {
         setStep('idle');
         setReceiptId('');
@@ -100,7 +107,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
     }
   };
 
-  const reset = () => { setStep('idle'); setReceiptId(''); setPhone(''); setErrorMsg(''); };
+  const reset = () => { setStep('idle'); setReceiptId(''); setPhone(''); setLada('+52'); setErrorMsg(''); };
 
   return (
     <div className="min-h-full bg-gradient-to-br from-slate-100 to-blue-50 p-4 md:p-6 lg:p-8 flex flex-col gap-5">
@@ -156,8 +163,22 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
           {step === 'enter_phone' && (
             <div className="flex flex-col gap-2">
               <p className="text-slate-500 text-sm">Ticket <strong>#{receiptId}</strong> — ingresa tu número de celular para verificar:</p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+              <div className="flex gap-2 flex-wrap">
+                {/* Country / lada selector */}
+                <div className="flex rounded-xl border-2 border-blue-300 overflow-hidden shrink-0">
+                  {COUNTRY_CODES.map(c => (
+                    <button
+                      key={c.code + c.label}
+                      onClick={() => setLada(c.code)}
+                      className={`flex items-center gap-1 px-3 py-2.5 text-sm font-bold transition-colors ${lada === c.code ? 'bg-[#0a2d6e] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      <span>{c.flag}</span>
+                      <span className="hidden sm:inline">{c.code}</span>
+                    </button>
+                  ))}
+                </div>
+                {/* Phone number */}
+                <div className="relative flex-1 min-w-[140px]">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="tel"
@@ -174,8 +195,10 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
                   className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0">
                   <Search className="w-4 h-4" /> Ver
                 </button>
-                <button onClick={reset} className="text-slate-400 hover:text-slate-600 text-sm px-2">Cancelar</button>
               </div>
+              <button onClick={reset} className="text-slate-400 hover:text-slate-600 text-sm self-start">
+                ← Cancelar
+              </button>
             </div>
           )}
 

@@ -57,10 +57,10 @@ export async function findClientByPhone(cellphone: string): Promise<ClientInfo |
   if (data?.result?.[0]?.clients) clients = data.result[0].clients;
   else if (Array.isArray(data?.clients)) clients = data.clients;
 
-  const normalized = cellphone.replace(/\D/g, '').replace(/^52/, '');
+  const digits = cellphone.replace(/\D/g, '');
   return clients.find((c) => {
-    const stored = (c.cellphone ?? '').replace(/\D/g, '').replace(/^52/, '');
-    return stored === normalized || stored.endsWith(normalized) || normalized.endsWith(stored);
+    const stored = (c.cellphone ?? '').replace(/\D/g, '');
+    return stored === digits || stored.endsWith(digits) || digits.endsWith(stored);
   }) ?? null;
 }
 
