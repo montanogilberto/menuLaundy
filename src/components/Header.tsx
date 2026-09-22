@@ -1,30 +1,43 @@
-
-
-import { IonHeader, IonToolbar, IonTitle, IonImg } from '@ionic/react';
+import { Star } from 'lucide-react';
 import logo from '../assets/logo_white.jpeg';
 
-export default function Header() {
+interface Props {
+  onRewardsClick?: () => void;
+}
+
+export default function Header({ onRewardsClick }: Props) {
   return (
-    <IonHeader className="relative bg-white text-slate-900 shadow-2xl border-b-4 border-blue-500">
-      <IonToolbar className="w-full px-3 sm:px-4 md:px-8 py-3 md:py-5">
-        <div className="flex items-center gap-2 md:gap-4">
-          <div className="relative shrink-0">
-            <IonImg
-              src={logo}
-              alt="GMO Lavandería Auto-Lavado Logo"
-              className="w-10 h-10 sm:w-12 sm:h-12 md:w-20 md:h-20 object-contain drop-shadow-lg"
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-transparent to-cyan-400/20 rounded-full blur-sm"></div>
-          </div>
-          <div className="min-w-0">
-            <IonTitle className="p-0 m-0">
-              <span className="block text-sm sm:text-lg md:text-2xl font-serif font-bold text-slate-700 tracking-wide uppercase leading-tight">
-                Lavandería Auto-Lavado
-              </span>
-            </IonTitle>
-          </div>
+    <header className="bg-gradient-to-r from-blue-950 via-blue-900 to-slate-900 border-b-4 border-cyan-500 flex-shrink-0">
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-8 py-3 md:py-4 flex items-center gap-4">
+        {/* Logo */}
+        <img
+          src={logo}
+          alt="GMO Lavandería"
+          className="w-12 h-12 md:w-16 md:h-16 object-contain rounded-xl shrink-0"
+        />
+
+        {/* Brand */}
+        <div className="flex-1 min-w-0">
+
+          <h1 className="text-white font-black text-xl md:text-3xl lg:text-4xl tracking-wide uppercase leading-none">
+            Lavandería Y Auto-Lavado
+          </h1>
+          <p className="text-blue-300 text-xs md:text-sm font-medium mt-0.5 hidden sm:block">
+            Blvd. Musaro 1 B, Nuevo Hermosillo · +52 662 651 3670
+          </p>
         </div>
-      </IonToolbar>
-    </IonHeader>
+
+        {/* Rewards CTA */}
+        {onRewardsClick && (
+          <button
+            onClick={onRewardsClick}
+            className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-900 font-black text-sm md:text-xl px-4 md:px-7 py-2 md:py-3 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95 border-2 border-yellow-200 whitespace-nowrap shrink-0"
+          >
+            <Star className="w-4 h-4 md:w-6 md:h-6 fill-current shrink-0" />
+            <span>Mis Puntos</span>
+          </button>
+        )}
+      </div>
+    </header>
   );
 }

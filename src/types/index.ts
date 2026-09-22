@@ -5,14 +5,23 @@ export interface Service {
   price: string;
 }
 
+export interface RewardsTier {
+  label: string;
+  pointsRequired: number;
+  benefit: string;
+  icon: string;
+}
+
 export interface Slide {
-  type: 'service' | 'video';
+  type: 'service' | 'video' | 'rewards';
   title: string;
   services?: Service[];
   note?: string;
   note2?: string;
   videoId?: string;
   videoIds?: string[];
+  rewardsTiers?: RewardsTier[];
+  rewardsNote?: string;
 }
 
 export interface TicketItem {

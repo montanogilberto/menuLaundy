@@ -1,20 +1,30 @@
+import { useState } from 'react';
 import { IonApp, IonContent, IonPage } from '@ionic/react';
 import Header from './components/Header';
-import Carousel from './components/Carousel';
 import Footer from './components/Footer';
+import KioskHomePage from './pages/KioskHomePage';
+import RewardsCheckPage from './pages/RewardsCheckPage';
+
+type View = 'home' | 'rewards';
 
 function App() {
+  const [view, setView] = useState<View>('home');
+
   return (
     <IonApp>
       <IonPage>
-        <IonContent fullscreen className="bg-gradient-to-br from-blue-50 via-slate-50 to-cyan-50">
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1" role="main" aria-label="Contenido principal">
-              <Carousel />
-            </main>
-            <Footer />
-          </div>
+        <IonContent fullscreen>
+          {view === 'rewards' ? (
+            <RewardsCheckPage onBack={() => setView('home')} />
+          ) : (
+            <div className="min-h-screen flex flex-col">
+              <Header onRewardsClick={() => setView('rewards')} />
+              <main className="flex-1" role="main" aria-label="Contenido principal">
+                <KioskHomePage />
+              </main>
+              <Footer />
+            </div>
+          )}
         </IonContent>
       </IonPage>
     </IonApp>

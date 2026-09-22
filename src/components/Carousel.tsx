@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { slides as staticSlides, getCurrentMusicSelection } from '../data/services';
 import ServiceTable from './ServiceTable';
 import YouTubePlayer from './YouTubePlayer';
+import RewardsSlide from './RewardsSlide';
 
 export default function Carousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -90,7 +91,12 @@ export default function Carousel() {
             </div>
             <div className="flex-1 bg-white rounded-2xl md:rounded-3xl shadow-2xl border-4 border-slate-200 overflow-visible md:overflow-hidden">
               <div className="p-5 md:p-10 h-full flex flex-col">
-                {slide.type === 'service' && slide.services ? (
+                {slide.type === 'rewards' ? (
+                  <RewardsSlide
+                    tiers={slide.rewardsTiers ?? []}
+                    note={slide.rewardsNote}
+                  />
+                ) : slide.type === 'service' && slide.services ? (
                   <>
                     <ServiceTable
                       services={slide.services}

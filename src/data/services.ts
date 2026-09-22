@@ -36,6 +36,12 @@ export const getCurrentMusicSelection = () => {
 };
 
 
+export const rewardsTiers = [
+  { label: 'Bronce',   pointsRequired: 5,   benefit: '1 Lavado Básico GRATIS',         icon: '🥉' },
+  { label: 'Plata',    pointsRequired: 10,  benefit: '1 Servicio Completo GRATIS',      icon: '🥈' },
+  { label: 'Oro',      pointsRequired: 20,  benefit: '1 Mes de Lavados Ilimitados',     icon: '🥇' },
+];
+
 export const slides: Slide[] = [
   {
     type: 'service',
@@ -71,7 +77,7 @@ export const slides: Slide[] = [
       { name: 'Básico', max: '6 Prendas Aprox', maxDescription: 'Lavado express 20 min aprox', price: '$160' },
       { name: 'Medio', max: 'Chica', maxDescription: 'Nivel de Agua Medio', price: '$180' },
       { name: 'Carga Alta', max: 'Media', maxDescription: 'Nivel de Agua Completo', price: '$210' },
-      { name: 'Colchas Grandes', max: 'Variable', price: '$260' },
+      { name: 'Colchas Grandes', max: 'Variable', price: '$200' },
     ],
     note: '<strong>Incluye:</strong> Lavado + Secado + Doblado + Jabón y Suavitel<br>🕒 Entrega: 3 horas',
   },
