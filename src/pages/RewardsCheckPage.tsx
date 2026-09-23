@@ -89,7 +89,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
     <div className="min-h-screen flex flex-col bg-[#f0f4fa]">
 
       {/* ── TOP NAV ── */}
-      <div className="bg-[#0a2d6e] px-4 py-3 flex items-center gap-3 shrink-0">
+      <div className="bg-[#0a2d6e] px-3 sm:px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center gap-2 sm:gap-3 shrink-0 sticky top-0 z-20">
         <button onClick={onBack} className="text-white/70 hover:text-white transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -98,13 +98,13 @@ export default function RewardsCheckPage({ onBack }: Props) {
             <WashingMachine className="w-5 h-5 text-[#0a2d6e]" />
           </div>
           <div className="leading-none">
-            <p className="text-white font-black text-sm leading-tight">LAVANDERÍA Y<br/>AUTO-LAVADO</p>
+            <p className="text-white font-black text-xs sm:text-sm leading-tight">LAVANDERÍA Y<br/>AUTO-LAVADO</p>
           </div>
         </div>
         {step === 'result' && client ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="relative">
-              <Bell className="w-6 h-6 text-white" />
+              <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center">
@@ -115,7 +115,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 <p className="text-blue-300 text-[10px]">Cliente</p>
               </div>
             </div>
-            <button onClick={handleReset} className="text-white/60 hover:text-white">
+            <button onClick={handleReset} className="text-white/60 hover:text-white p-1">
               <RotateCcw className="w-4 h-4" />
             </button>
           </div>
@@ -125,7 +125,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
       </div>
 
       {/* ── CONTENT ── */}
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
 
         {/* INPUT */}
         {step === 'input' && (
@@ -193,47 +193,47 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
         {/* ── DASHBOARD ── */}
         {step === 'result' && client && (
-          <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col gap-4">
+          <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3 sm:gap-4">
 
             {/* Welcome hero */}
-            <div className="bg-gradient-to-r from-[#1565c0] to-[#0a2d6e] rounded-3xl p-5 flex items-center gap-4 shadow-xl">
-              <div className="w-16 h-16 bg-blue-400/30 rounded-full flex items-center justify-center shrink-0">
-                <User className="w-9 h-9 text-white" />
+            <div className="bg-gradient-to-r from-[#1565c0] to-[#0a2d6e] rounded-3xl p-4 sm:p-5 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 shadow-xl">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-400/30 rounded-full flex items-center justify-center shrink-0">
+                <User className="w-7 h-7 sm:w-9 sm:h-9 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-white font-black text-2xl md:text-3xl">¡Hola, {client.first_name}!</h2>
-                <p className="text-blue-200 text-sm">Aquí tienes un resumen de tu actividad y puntos.</p>
+                <h2 className="text-white font-black text-xl sm:text-2xl md:text-3xl break-words">¡Hola, {client.first_name}!</h2>
+                <p className="text-blue-200 text-xs sm:text-sm">Aquí tienes un resumen de tu actividad y puntos.</p>
               </div>
-              <div className="bg-[#0a2d6e]/60 rounded-2xl px-4 py-3 text-center shrink-0 border border-white/20">
+              <div className="bg-[#0a2d6e]/60 rounded-2xl px-4 py-3 text-center shrink-0 border border-white/20 w-full sm:w-auto flex sm:block items-center justify-between gap-2">
                 <p className="text-yellow-300 font-bold text-xs uppercase tracking-wide">Mis Puntos</p>
-                <div className="flex items-center gap-1 justify-center my-1">
+                <div className="flex items-center gap-1 justify-center sm:my-1">
                   <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                   <span className="text-white font-black text-3xl">{fmt(pts)}</span>
                 </div>
-                <button className="text-cyan-300 text-xs font-semibold flex items-center gap-0.5 mx-auto">
+                <button className="text-cyan-300 text-xs font-semibold flex items-center gap-0.5 sm:mx-auto">
                   Ver detalles <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
             </div>
 
             {/* Quick actions */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3">
               {[
                 { icon: <WashingMachine className="w-7 h-7 text-white" />, bg: 'bg-blue-500',   label: 'Lavado',       sub: 'Solicita un servicio' },
                 { icon: <Wind className="w-7 h-7 text-white" />,          bg: 'bg-purple-500',  label: 'Secado',       sub: 'Solicita un servicio' },
                 { icon: <Star className="w-7 h-7 text-white" />,          bg: 'bg-amber-400',   label: 'Mis Puntos',   sub: 'Ver y canjear' },
                 { icon: <Gift className="w-7 h-7 text-white" />,          bg: 'bg-emerald-500', label: 'Recompensas',  sub: 'Tus beneficios' },
               ].map(({ icon, bg, label, sub }) => (
-                <div key={label} className="bg-white rounded-2xl p-3 flex flex-col items-center gap-2 shadow text-center cursor-pointer hover:shadow-md transition-shadow">
-                  <div className={`${bg} w-12 h-12 rounded-2xl flex items-center justify-center shadow`}>{icon}</div>
-                  <p className="text-slate-800 font-bold text-sm leading-tight">{label}</p>
-                  <p className="text-slate-400 text-[10px] leading-tight">{sub}</p>
+                <div key={label} className="bg-white rounded-2xl p-2 sm:p-3 flex flex-col items-center gap-1.5 sm:gap-2 shadow text-center cursor-pointer hover:shadow-md transition-shadow min-w-0">
+                  <div className={`${bg} w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shadow [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-7 sm:[&>svg]:h-7`}>{icon}</div>
+                  <p className="text-slate-800 font-bold text-[10.5px] sm:text-sm leading-tight tracking-tight sm:tracking-normal whitespace-nowrap">{label}</p>
+                  <p className="hidden sm:block text-slate-400 text-[10px] leading-tight">{sub}</p>
                 </div>
               ))}
             </div>
 
             {/* Services status + promo banner */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div className="bg-white rounded-2xl p-4 shadow">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-[#0a2d6e] font-black text-base">Estado de tus servicios</h3>
@@ -253,9 +253,9 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
               {/* Promo */}
               <div className="bg-gradient-to-br from-[#0a2d6e] to-[#1565c0] rounded-2xl p-5 shadow flex flex-col justify-between relative overflow-hidden">
-                <div className="text-4xl mb-2">🎁✨</div>
+                <div className="text-3xl sm:text-4xl mb-2">🎁✨</div>
                 <div>
-                  <p className="text-white font-black text-xl leading-tight">Canjea tus puntos<br/>en grandes beneficios</p>
+                  <p className="text-white font-black text-lg sm:text-xl leading-tight">Canjea tus puntos<br/>en grandes beneficios</p>
                   <button className="mt-3 bg-blue-500 hover:bg-blue-400 text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-1">
                     Ver recompensas <ChevronRight className="w-3 h-3" />
                   </button>
@@ -278,7 +278,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
               </div>
 
               {tab === 'points' && (
-                <div className="p-4 flex items-center gap-4">
+                <div className="p-4 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
                   <div className="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
                     <Star className="w-6 h-6 text-white fill-white" />
                   </div>
@@ -295,8 +295,8 @@ export default function RewardsCheckPage({ onBack }: Props) {
                       {next ? `${progress}% para tu próxima recompensa (nivel ${next.label})` : '¡Nivel máximo alcanzado! 🥇'}
                     </p>
                   </div>
-                  <button className="text-blue-600 text-xs font-bold text-right shrink-0 leading-tight">
-                    Ver catálogo<br/>de recompensas <ChevronRight className="w-3 h-3 inline" />
+                  <button className="text-blue-600 text-xs font-bold text-center sm:text-right shrink-0 leading-tight w-full sm:w-auto border-t sm:border-0 border-slate-100 pt-3 sm:pt-0">
+                    Ver catálogo<br className="hidden sm:block"/> de recompensas <ChevronRight className="w-3 h-3 inline" />
                   </button>
                 </div>
               )}
@@ -342,7 +342,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                           <Gift className={`w-5 h-5 ${canRedeem ? 'text-green-600' : 'text-slate-400'}`} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-slate-800 font-bold text-sm">{item.name}</p>
+                          <p className="text-slate-800 font-bold text-sm break-words">{item.name}</p>
                           {item.description && <p className="text-slate-400 text-xs truncate">{item.description}</p>}
                           <p className="text-blue-600 text-xs font-semibold">{fmt(item.requiredPoints)} puntos</p>
                         </div>
@@ -370,7 +370,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
               </div>
               <button onClick={() => setShowQR(true)} className="hover:opacity-80 transition-opacity">
                 <QRCodeSVG
-                  value={`https://posvending.gmolavanderia.com/rewards-dashboard/${client.clientId}`}
+                  value={`CLIENT:${client.clientId}:${client.first_name} ${client.last_name}`}
                   size={160}
                   bgColor="#ffffff"
                   fgColor="#0a2d6e"
@@ -382,21 +382,21 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
             {/* Fullscreen QR modal */}
             {showQR && (
-              <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center gap-6 px-6">
+              <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center gap-4 sm:gap-6 px-6 py-[max(4rem,env(safe-area-inset-top))] overflow-y-auto">
                 <button
                   onClick={() => setShowQR(false)}
-                  className="absolute top-5 right-5 bg-slate-100 hover:bg-slate-200 rounded-full p-3"
+                  className="absolute top-[max(1.25rem,env(safe-area-inset-top))] right-5 bg-slate-100 hover:bg-slate-200 rounded-full p-3"
                 >
                   <X className="w-6 h-6 text-slate-600" />
                 </button>
                 <div className="flex flex-col items-center gap-2">
-                  <p className="text-[#0a2d6e] font-black text-2xl">{client.first_name} {client.last_name}</p>
+                  <p className="text-[#0a2d6e] font-black text-xl sm:text-2xl text-center break-words">{client.first_name} {client.last_name}</p>
                   <p className="text-slate-400 text-sm">Cliente #{client.clientId}</p>
                 </div>
                 <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-[#0a2d6e]">
                   <QRCodeSVG
-                    value={`https://posvending.gmolavanderia.com/rewards-dashboard/${client.clientId}`}
-                    size={Math.min(window.innerWidth - 80, 320)}
+                    value={`CLIENT:${client.clientId}:${client.first_name} ${client.last_name}`}
+                    size={Math.min(window.innerWidth - 96, window.innerHeight - 320, 320)}
                     bgColor="#ffffff"
                     fgColor="#0a2d6e"
                     level="H"
@@ -419,7 +419,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
               <div className="px-4 py-3 border-b border-slate-100">
                 <h3 className="text-[#0a2d6e] font-black text-base">Accesos rápidos</h3>
               </div>
-              <div className="grid grid-cols-2 gap-3 p-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 p-3">
                 {[
                   { icon: '💵', bg: 'bg-green-500',  label: 'Prestamista',      sub: 'Conecta, financia, haz crecer.' },
                   { icon: '👤', bg: 'bg-blue-500',   label: 'Solicita tu Préstamo',  sub: 'Tu proyecto, nuestra prioridad.' },
@@ -439,13 +439,13 @@ export default function RewardsCheckPage({ onBack }: Props) {
             </div>
 
             {/* Promo footer banner */}
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-4">
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
               <div className="text-3xl">🎁</div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-[#0a2d6e] font-black text-sm">¡Gana más con cada servicio!</p>
                 <p className="text-blue-400 text-xs">Tus puntos son la llave a grandes recompensas.</p>
               </div>
-              <button className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1 shrink-0">
+              <button className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center justify-center gap-1 shrink-0 w-full sm:w-auto">
                 Ver catálogo <ChevronRight className="w-3 h-3" />
               </button>
             </div>
@@ -456,14 +456,14 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
       {/* ── BOTTOM NAV (dashboard only) ── */}
       {step === 'result' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-[#0a2d6e] border-t border-blue-800 flex justify-around py-3 z-10">
+        <div className="fixed bottom-0 left-0 right-0 bg-[#0a2d6e] border-t border-blue-800 flex justify-around pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] z-10">
           {[
             { icon: <Home className="w-5 h-5" />,    label: 'Inicio',    active: true  },
             { icon: <Grid3X3 className="w-5 h-5" />, label: 'Servicios', active: false },
             { icon: <Star className="w-5 h-5" />,    label: 'Mis Puntos',active: false },
             { icon: <User className="w-5 h-5" />,    label: 'Perfil',    active: false },
           ].map(({ icon, label, active }) => (
-            <button key={label} className={`flex flex-col items-center gap-1 transition-colors ${active ? 'text-white' : 'text-blue-400'}`}>
+            <button key={label} className={`flex-1 flex flex-col items-center gap-1 py-1 min-h-[44px] transition-colors ${active ? 'text-white' : 'text-blue-400'}`}>
               {icon}
               <span className="text-[10px] font-semibold">{label}</span>
               {active && <div className="w-1 h-1 bg-white rounded-full" />}
