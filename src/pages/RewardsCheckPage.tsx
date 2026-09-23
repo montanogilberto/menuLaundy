@@ -8,8 +8,8 @@ import {
 } from 'lucide-react';
 import {
   findClientByPhone, getBalance, getLedger, getCatalog,
-  ClientInfo, RewardsBalance, RewardsCatalogItem, LedgerEntry,
-} from '../api/rewardsCheckApi';
+  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry,
+} from '../api/rewards';
 
 interface Props { onBack: () => void; }
 type Step = 'input' | 'loading' | 'result' | 'not_found' | 'error';
@@ -335,7 +335,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             {catalog.length > 0 && (
               <div className="bg-white rounded-2xl shadow overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-100">
-                  <h3 className="text-[#0a2d6e] font-black text-base">Catálogo de Recompensas</h3>
+                  <h3 className="text-[#0a2d6e] font-black text-lg">Catálogo de Recompensas</h3>
                 </div>
                 <div className="divide-y divide-slate-50">
                   {catalog.map(item => {
@@ -344,38 +344,76 @@ export default function RewardsCheckPage({ onBack }: Props) {
                     const canRedeem   = current >= required;
                     const pct         = Math.min(100, Math.round((current / required) * 100));
                     const missing     = Math.max(0, required - current);
+                    const isStamps    = item.rewardType === 'free_product' && required <= 10;
+                    const isDiscount  = item.rewardType === 'discount_fixed';
+                    const name        = item.name.replace(/\s*\(3x1\)\s*$/i, '');
+                    const icon        = isDiscount ? '💰' : '🎁';
                     return (
-                      <div key={item.catalogItemId ?? item.name} className="flex items-start gap-3 px-4 py-3">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${canRedeem ? 'bg-green-100' : 'bg-slate-100'}`}>
-                          <Gift className={`w-5 h-5 ${canRedeem ? 'text-green-600' : 'text-slate-400'}`} />
+                      <div key={item.catalogItemId ?? item.name} className="flex items-start gap-3 px-4 py-4">
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5 text-2xl ${canRedeem ? 'bg-green-100' : 'bg-slate-100'}`}>
+                          {icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-slate-800 font-bold text-sm break-words">{item.name}</p>
-                            {canRedeem
-                              ? <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0">¡Disponible!</span>
-                              : <span className="text-slate-400 text-xs shrink-0">faltan {fmt(missing)} pts</span>
-                            }
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-slate-800 font-black text-lg leading-tight break-words">{name}</p>
+                            {isStamps ? (
+                              <span className="bg-amber-400 text-slate-900 font-black text-sm leading-tight px-2.5 py-1.5 rounded-xl shrink-0 text-center">
+                                {required}+1<br/><span className="text-[11px]">GRATIS</span>
+                              </span>
+                            ) : (
+                              <span className={`flex items-center gap-1 font-black text-2xl leading-none px-3 py-1.5 rounded-xl shrink-0 ${canRedeem ? 'bg-green-500 text-white' : 'bg-[#0a2d6e] text-white'}`}>
+                                <Star className="w-5 h-5 fill-yellow-300 text-yellow-300" />{fmt(required)}
+                              </span>
+                            )}
                           </div>
-                          {item.description && <p className="text-slate-400 text-xs mt-0.5">{item.description}</p>}
-                          {/* Progress bar */}
-                          <div className="mt-2 flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          {isDiscount && item.discountValue && (
+                            <p className="text-emerald-600 font-black text-2xl mt-0.5">${fmt(item.discountValue)} de descuento</p>
+                          )}
+                          {item.description && <p className="text-slate-500 text-sm mt-1">{item.description}</p>}
+                          {isStamps ? (
+                            /* Stamps: N paid + 1 free */
+                            <div className="mt-3 flex items-center gap-2">
+                              {Array.from({ length: required }, (_, i) => {
+                                const filled = i < current;
+                                return (
+                                  <div key={i} className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-lg border-2 ${filled ? 'bg-[#0a2d6e] border-[#0a2d6e] text-white' : 'bg-white border-dashed border-slate-300 text-slate-300'}`}>
+                                    {filled ? <Star className="w-5 h-5 fill-yellow-300 text-yellow-300" /> : i + 1}
+                                  </div>
+                                );
+                              })}
+                              <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
+                              <div className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-2 ${canRedeem ? 'bg-green-500 border-green-500 text-white animate-pulse' : 'bg-amber-50 border-amber-300 text-amber-500'}`}>
+                                <Gift className="w-5 h-5" />
+                                <span className="text-[9px] font-black leading-none mt-0.5">GRATIS</span>
+                              </div>
+                            </div>
+                          ) : (
+                          <div className="mt-3 flex items-center gap-2">
+                            <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all ${canRedeem ? 'bg-green-500' : 'bg-[#0a2d6e]'}`}
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
-                            <span className={`text-xs font-bold shrink-0 ${canRedeem ? 'text-green-600' : 'text-[#0a2d6e]'}`}>
+                            <span className={`text-sm font-bold shrink-0 ${canRedeem ? 'text-green-600' : 'text-[#0a2d6e]'}`}>
                               {fmt(current)}/{fmt(required)}
                             </span>
                           </div>
+                          )}
+                          {canRedeem
+                            ? <span className="inline-block mt-2 bg-green-100 text-green-700 text-sm font-bold px-3 py-1 rounded-full">¡Disponible!</span>
+                            : <p className="text-slate-500 text-sm mt-1.5">
+                                {isStamps
+                                  ? <>Te {missing === 1 ? 'falta' : 'faltan'} <strong className="text-[#0a2d6e]">{missing}</strong> para tu gratis</>
+                                  : <>Te faltan <strong className="text-[#0a2d6e]">{fmt(missing)} pts</strong></>}
+                              </p>
+                          }
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <p className="text-slate-400 text-xs text-center px-4 py-3">Acércate a caja para canjear tus puntos.</p>
+                <p className="text-slate-500 text-sm text-center px-4 py-3">Acércate a caja para canjear tus puntos.</p>
               </div>
             )}
 
