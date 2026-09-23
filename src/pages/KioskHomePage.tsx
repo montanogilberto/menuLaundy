@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { Search, Receipt, Phone, AlertCircle, Loader2 } from 'lucide-react';
 import { slides } from '../data/services';
 import { Service } from '../types';
@@ -79,6 +80,7 @@ const COUNTRY_CODES = [
 ];
 
 export default function KioskHomePage({ onViewReceipt }: Props) {
+  const history = useHistory();
   const [step, setStep]           = useState<ReceiptStep>('idle');
   const [receiptId, setReceiptId] = useState('');
   const [phone, setPhone]         = useState('');
@@ -119,18 +121,50 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
   return (
     <div className="min-h-full bg-gradient-to-br from-slate-100 to-blue-50 p-3 sm:p-4 md:p-6 lg:p-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex flex-col gap-4 sm:gap-5">
 
-      {/* Top banners row */}
+      {/* MIS PUNTOS — big tappable CTA */}
+      <button
+        onClick={() => history.push('/puntos')}
+        className="w-full relative overflow-hidden rounded-2xl shadow-xl active:scale-[0.98] transition-transform cursor-pointer"
+        style={{ background: 'linear-gradient(135deg, #1a3fa8 0%, #0a2d6e 60%, #1a3fa8 100%)' }}
+      >
+        {/* Background decoration circles */}
+        <div className="absolute right-0 top-0 w-48 h-48 rounded-full opacity-10 bg-white translate-x-16 -translate-y-16" />
+        <div className="absolute right-8 bottom-0 w-32 h-32 rounded-full opacity-10 bg-white translate-y-10" />
+
+        <div className="relative flex items-center gap-4 px-5 py-5 sm:px-8 sm:py-6">
+          {/* Star icon */}
+          <div className="shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg">
+              <span className="text-3xl sm:text-4xl">⭐</span>
+            </div>
+          </div>
+
+          {/* Text + CTA */}
+          <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-yellow-300 font-black text-3xl sm:text-4xl md:text-5xl leading-none tracking-wide">
+                MIS <span className="text-white">PUNTOS</span>
+              </p>
+              <p className="text-blue-200 text-sm sm:text-base mt-1">Consulta tus puntos y recompensas</p>
+            </div>
+            <div className="shrink-0">
+              <div className="bg-yellow-400 text-slate-900 font-black text-base sm:text-lg px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 whitespace-nowrap animate-pulse">
+                VER MIS PUNTOS →
+              </div>
+            </div>
+          </div>
+        </div>
+      </button>
+
+      {/* Second row: receipt + promo note */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-        {/* Rewards promo */}
-        <div className="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-lg border-2 border-yellow-300">
+
+        {/* Small promo note */}
+        <div className="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-lg border-2 border-yellow-300 md:order-last">
           <span className="text-3xl shrink-0">🎁</span>
           <div>
-            <p className="text-slate-900 font-black text-lg md:text-xl leading-tight">
-              ¡Acumula puntos con cada servicio!
-            </p>
-            <p className="text-slate-800/70 text-sm font-semibold mt-0.5">
-              Presiona <strong>"Mis Puntos"</strong> para consultar tu saldo.
-            </p>
+            <p className="text-slate-900 font-black text-base md:text-lg leading-tight">¡Acumula puntos con cada servicio!</p>
+            <p className="text-slate-800/70 text-sm font-semibold mt-0.5">Usa la pestaña <strong>"Mis Puntos"</strong> para ver tu saldo.</p>
           </div>
         </div>
 
