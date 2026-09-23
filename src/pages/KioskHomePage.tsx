@@ -56,7 +56,12 @@ function Section({ title, services, note, note2, colorKey }: SectionProps) {
       {(note || note2) && (
         <div className="px-3 pb-3 sm:px-4 sm:pb-4 flex flex-col gap-1">
           {note  && <p className="text-slate-500 text-sm md:text-base" dangerouslySetInnerHTML={{ __html: note  }} />}
-          {note2 && <p className="text-slate-400 text-xs md:text-sm italic"   dangerouslySetInnerHTML={{ __html: note2 }} />}
+          {note2 && (
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 mt-1">
+              <span className="text-blue-500 text-lg shrink-0">ℹ️</span>
+              <p className="text-blue-800 font-bold text-sm md:text-base" dangerouslySetInnerHTML={{ __html: note2 }} />
+            </div>
+          )}
         </div>
       )}
     </div>
