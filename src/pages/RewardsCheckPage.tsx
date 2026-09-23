@@ -339,20 +339,38 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 </div>
                 <div className="divide-y divide-slate-50">
                   {catalog.map(item => {
-                    const canRedeem = (balance?.balance ?? 0) >= item.requiredPoints;
+                    const current     = balance?.balance ?? 0;
+                    const required    = item.requiredPoints;
+                    const canRedeem   = current >= required;
+                    const pct         = Math.min(100, Math.round((current / required) * 100));
+                    const missing     = Math.max(0, required - current);
                     return (
-                      <div key={item.catalogItemId ?? item.name} className="flex items-center gap-3 px-4 py-3">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${canRedeem ? 'bg-green-100' : 'bg-slate-100'}`}>
+                      <div key={item.catalogItemId ?? item.name} className="flex items-start gap-3 px-4 py-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${canRedeem ? 'bg-green-100' : 'bg-slate-100'}`}>
                           <Gift className={`w-5 h-5 ${canRedeem ? 'text-green-600' : 'text-slate-400'}`} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-slate-800 font-bold text-sm break-words">{item.name}</p>
-                          {item.description && <p className="text-slate-400 text-xs truncate">{item.description}</p>}
-                          <p className="text-blue-600 text-xs font-semibold">{fmt(item.requiredPoints)} puntos</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-slate-800 font-bold text-sm break-words">{item.name}</p>
+                            {canRedeem
+                              ? <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0">¡Disponible!</span>
+                              : <span className="text-slate-400 text-xs shrink-0">faltan {fmt(missing)} pts</span>
+                            }
+                          </div>
+                          {item.description && <p className="text-slate-400 text-xs mt-0.5">{item.description}</p>}
+                          {/* Progress bar */}
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${canRedeem ? 'bg-green-500' : 'bg-[#0a2d6e]'}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className={`text-xs font-bold shrink-0 ${canRedeem ? 'text-green-600' : 'text-[#0a2d6e]'}`}>
+                              {fmt(current)}/{fmt(required)}
+                            </span>
+                          </div>
                         </div>
-                        {canRedeem && (
-                          <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full shrink-0">¡Disponible!</span>
-                        )}
                       </div>
                     );
                   })}
