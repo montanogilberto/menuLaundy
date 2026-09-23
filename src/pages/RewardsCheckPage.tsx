@@ -7,8 +7,8 @@ import {
   Receipt, Maximize2, X,
 } from 'lucide-react';
 import {
-  findClientByPhone, getBalance, getLedger, getCatalog,
-  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry,
+  findClientByPhone, getBalance, getLedger, getCatalog, getProductCounts,
+  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry, ProductCount,
 } from '../api/rewards';
 
 interface Props { onBack: () => void; }
@@ -47,9 +47,10 @@ export default function RewardsCheckPage({ onBack }: Props) {
   const [client, setClient]   = useState<ClientInfo | null>(null);
   const [balance, setBalance] = useState<RewardsBalance | null>(null);
   const [ledger, setLedger]   = useState<LedgerEntry[]>([]);
-  const [catalog, setCatalog] = useState<RewardsCatalogItem[]>([]);
-  const [errMsg, setErrMsg]   = useState('');
-  const [showQR, setShowQR]   = useState(false);
+  const [catalog, setCatalog]         = useState<RewardsCatalogItem[]>([]);
+  const [productCounts, setProductCounts] = useState<ProductCount[]>([]);
+  const [errMsg, setErrMsg]           = useState('');
+  const [showQR, setShowQR]           = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = async () => {
@@ -62,11 +63,12 @@ export default function RewardsCheckPage({ onBack }: Props) {
         getCatalog().catch(() => [] as RewardsCatalogItem[]),
       ]);
       if (!found) { setStep('not_found'); return; }
-      const [bal, led] = await Promise.all([
+      const [bal, led, counts] = await Promise.all([
         getBalance(found.clientId).catch(() => null),
         getLedger(found.clientId).catch(() => [] as LedgerEntry[]),
+        getProductCounts(found.clientId).catch(() => [] as ProductCount[]),
       ]);
-      setClient(found); setBalance(bal); setLedger(led); setCatalog(cat);
+      setClient(found); setBalance(bal); setLedger(led); setCatalog(cat); setProductCounts(counts);
       setStep('result');
     } catch (e: any) {
       setErrMsg(e?.message ?? 'Error de conexión'); setStep('error');
@@ -74,7 +76,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
   };
 
   const handleReset = () => {
-    setPhone(''); setClient(null); setBalance(null); setLedger([]); setCatalog([]);
+    setPhone(''); setClient(null); setBalance(null); setLedger([]); setCatalog([]); setProductCounts([]);
     setStep('input'); setTab('points');
     setTimeout(() => inputRef.current?.focus(), 100);
   };
@@ -339,13 +341,17 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 </div>
                 <div className="divide-y divide-slate-50">
                   {catalog.map(item => {
-                    const current     = balance?.balance ?? 0;
+                    const isStamps    = item.rewardType === 'free_product' && item.freeProductId != null && item.requiredPoints <= 10;
+                    const isDiscount  = item.rewardType === 'discount_fixed';
+                    // For stamp cards: use per-product purchase count; for discount/points: use global balance
+                    const productRow  = isStamps ? productCounts.find(p => p.productId === item.freeProductId) : undefined;
+                    const current     = isStamps
+                      ? (productRow?.unitsAvailable ?? 0)
+                      : (balance?.balance ?? 0);
                     const required    = item.requiredPoints;
                     const canRedeem   = current >= required;
                     const pct         = Math.min(100, Math.round((current / required) * 100));
                     const missing     = Math.max(0, required - current);
-                    const isStamps    = item.rewardType === 'free_product' && required <= 10;
-                    const isDiscount  = item.rewardType === 'discount_fixed';
                     const name        = item.name.replace(/\s*\(3x1\)\s*$/i, '');
                     const icon        = isDiscount ? '💰' : '🎁';
                     return (

@@ -98,3 +98,17 @@ export async function getCatalog(): Promise<CatalogItem[]> {
   });
   return data?.result?.[0]?.posRewardCatalogItems ?? [];
 }
+
+export interface ProductCount {
+  productId: number;
+  unitsPurchased: number;
+  unitsConsumed: number;
+  unitsAvailable: number;
+}
+
+export async function getProductCounts(clientId: number): Promise<ProductCount[]> {
+  const data: any = await post('/posRewardProductCounts', {
+    posRewardProductCounts: [{ companyId: COMPANY_ID, clientId }],
+  });
+  return data?.result?.[0]?.posRewardProductCounts ?? [];
+}
