@@ -241,7 +241,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
           <Section title="Lavado" services={wash.services} note={wash.note} note2="El lavado es realizado por el cliente." colorKey="wash" />
         )}
         {dry?.services && (
-          <Section title="Secado"            services={dry.services}  note={dry.note}                     colorKey="dry"      />
+          <Section title="Secado"            services={dry.services}  note={dry.note} note2="El Secado es realizado por el cliente." colorKey="dry"      />
         )}
         {full?.services && (
           <Section title="Servicio Completo" services={full.services} note={full.note}                    colorKey="complete" />
