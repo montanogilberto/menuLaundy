@@ -20,12 +20,12 @@ function ServiceCard({ service, accentClass }: { service: Service; accentClass: 
   return (
     <div className="flex items-center justify-between gap-3 bg-white rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow border border-slate-100">
       <div className="flex-1 min-w-0">
-        <p className="text-slate-900 font-black text-lg sm:text-xl md:text-2xl leading-tight sm:truncate">{service.name}</p>
-        <p className="text-slate-500 text-xs sm:text-sm md:text-base font-medium leading-snug sm:truncate">
+        <p className="text-slate-900 font-black text-xl md:text-2xl leading-tight sm:truncate">{service.name}</p>
+        <p className="text-slate-500 text-sm md:text-base font-medium leading-snug sm:truncate">
           {service.max}{service.maxDescription ? ` · ${service.maxDescription}` : ''}
         </p>
       </div>
-      <div className={`${accentClass} text-white font-black text-xl sm:text-2xl md:text-3xl px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl shadow whitespace-nowrap shrink-0`}>
+      <div className={`${accentClass} text-white font-black text-2xl md:text-3xl px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl shadow whitespace-nowrap shrink-0`}>
         {service.price}
       </div>
     </div>
@@ -46,7 +46,7 @@ function Section({ title, services, note, note2, colorKey }: SectionProps) {
     <div className="flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl border border-slate-200 bg-white">
       <div className={`bg-gradient-to-r ${c.header} px-4 py-3 sm:px-6 sm:py-4 flex items-center gap-3`}>
         <span className="text-2xl sm:text-3xl">{c.icon}</span>
-        <h2 className="text-white font-black text-lg sm:text-xl md:text-3xl tracking-wider sm:tracking-widest uppercase">{title}</h2>
+        <h2 className="text-white font-black text-xl md:text-3xl tracking-wider sm:tracking-widest uppercase">{title}</h2>
       </div>
       <div className="flex flex-col gap-2 p-3 sm:p-4">
         {services.map((s, i) => (
@@ -120,10 +120,10 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
         <div className="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-lg border-2 border-yellow-300">
           <span className="text-3xl shrink-0">🎁</span>
           <div>
-            <p className="text-slate-900 font-black text-base sm:text-lg md:text-xl leading-tight">
+            <p className="text-slate-900 font-black text-lg md:text-xl leading-tight">
               ¡Acumula puntos con cada servicio!
             </p>
-            <p className="text-slate-800/70 text-xs sm:text-sm font-semibold mt-0.5">
+            <p className="text-slate-800/70 text-sm font-semibold mt-0.5">
               Presiona <strong>"Mis Puntos"</strong> para consultar tu saldo.
             </p>
           </div>

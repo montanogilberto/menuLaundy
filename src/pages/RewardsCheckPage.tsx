@@ -133,7 +133,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             <div className="text-6xl sm:text-7xl">📱</div>
             <div className="text-center">
               <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">Consulta tus puntos</h2>
-              <p className="text-slate-500 text-sm sm:text-base mt-1">Ingresa tu número de teléfono</p>
+              <p className="text-slate-500 text-base mt-1">Ingresa tu número de teléfono</p>
             </div>
             <div className="w-full flex flex-col gap-3">
               <div className="relative">
@@ -176,7 +176,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
           <div className="max-w-md mx-auto text-center pt-8 sm:pt-16 flex flex-col items-center gap-4 sm:gap-5 px-4 sm:px-6">
             <div className="text-6xl sm:text-8xl">😕</div>
             <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">No encontrado</h2>
-            <p className="text-slate-500 text-base sm:text-lg break-words">No hallamos una cuenta con el número <strong>{phone}</strong>. Pregunta en caja para registrarte.</p>
+            <p className="text-slate-500 text-lg break-words">No hallamos una cuenta con el número <strong>{phone}</strong>. Pregunta en caja para registrarte.</p>
             <button onClick={handleReset} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4 hover:bg-blue-800 transition-all">
               Intentar de nuevo
             </button>
@@ -203,8 +203,8 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 <User className="w-7 h-7 sm:w-9 sm:h-9 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-white font-black text-xl sm:text-2xl md:text-3xl break-words">¡Hola, {client.first_name}!</h2>
-                <p className="text-blue-200 text-xs sm:text-sm">Aquí tienes un resumen de tu actividad y puntos.</p>
+                <h2 className="text-white font-black text-2xl md:text-3xl break-words">¡Hola, {client.first_name}!</h2>
+                <p className="text-blue-200 text-sm">Aquí tienes un resumen de tu actividad y puntos.</p>
               </div>
               <div className="bg-[#0a2d6e]/60 rounded-2xl px-4 py-3 text-center shrink-0 border border-white/20 w-full sm:w-auto flex sm:block items-center justify-between gap-2">
                 <p className="text-yellow-300 font-bold text-xs uppercase tracking-wide">Mis Puntos</p>
@@ -219,17 +219,19 @@ export default function RewardsCheckPage({ onBack }: Props) {
             </div>
 
             {/* Quick actions */}
-            <div className="grid grid-cols-4 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {[
                 { icon: <WashingMachine className="w-7 h-7 text-white" />, bg: 'bg-blue-500',   label: 'Lavado',       sub: 'Solicita un servicio' },
                 { icon: <Wind className="w-7 h-7 text-white" />,          bg: 'bg-purple-500',  label: 'Secado',       sub: 'Solicita un servicio' },
                 { icon: <Star className="w-7 h-7 text-white" />,          bg: 'bg-amber-400',   label: 'Mis Puntos',   sub: 'Ver y canjear' },
                 { icon: <Gift className="w-7 h-7 text-white" />,          bg: 'bg-emerald-500', label: 'Recompensas',  sub: 'Tus beneficios' },
               ].map(({ icon, bg, label, sub }) => (
-                <div key={label} className="bg-white rounded-2xl p-2 sm:p-3 flex flex-col items-center gap-1.5 sm:gap-2 shadow text-center cursor-pointer hover:shadow-md transition-shadow min-w-0">
-                  <div className={`${bg} w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shadow [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-7 sm:[&>svg]:h-7`}>{icon}</div>
-                  <p className="text-slate-800 font-bold text-[10.5px] sm:text-sm leading-tight tracking-tight sm:tracking-normal whitespace-nowrap">{label}</p>
-                  <p className="hidden sm:block text-slate-400 text-[10px] leading-tight">{sub}</p>
+                <div key={label} className="bg-white rounded-2xl p-3 flex sm:flex-col items-center gap-2.5 sm:gap-2 shadow text-left sm:text-center cursor-pointer hover:shadow-md transition-shadow min-w-0">
+                  <div className={`${bg} w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shadow shrink-0 [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-7 sm:[&>svg]:h-7`}>{icon}</div>
+                  <div className="min-w-0">
+                    <p className="text-slate-800 font-bold text-sm leading-tight">{label}</p>
+                    <p className="text-slate-400 text-xs sm:text-[10px] leading-tight mt-0.5">{sub}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -257,7 +259,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
               <div className="bg-gradient-to-br from-[#0a2d6e] to-[#1565c0] rounded-2xl p-5 shadow flex flex-col justify-between relative overflow-hidden">
                 <div className="text-3xl sm:text-4xl mb-2">🎁✨</div>
                 <div>
-                  <p className="text-white font-black text-lg sm:text-xl leading-tight">Canjea tus puntos<br/>en grandes beneficios</p>
+                  <p className="text-white font-black text-xl leading-tight">Canjea tus puntos<br/>en grandes beneficios</p>
                   <button className="mt-3 bg-blue-500 hover:bg-blue-400 text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-1">
                     Ver recompensas <ChevronRight className="w-3 h-3" />
                   </button>
@@ -467,7 +469,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
           ].map(({ icon, label, active }) => (
             <button key={label} className={`flex-1 flex flex-col items-center gap-1 py-1 min-h-[44px] transition-colors ${active ? 'text-white' : 'text-blue-400'}`}>
               {icon}
-              <span className="text-[10px] font-semibold">{label}</span>
+              <span className="text-xs font-semibold">{label}</span>
               {active && <div className="w-1 h-1 bg-white rounded-full" />}
             </button>
           ))}

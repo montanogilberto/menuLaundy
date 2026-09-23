@@ -13,13 +13,13 @@ export default function Header({ onRewardsClick }: Props) {
         <img
           src={logo}
           alt="GMO Lavandería"
-          className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 object-contain rounded-xl shrink-0"
+          className="w-11 h-11 sm:w-12 sm:h-12 md:w-16 md:h-16 object-contain rounded-xl shrink-0"
         />
 
         {/* Brand */}
         <div className="flex-1 min-w-0">
 
-          <h1 className="text-white font-black text-base sm:text-xl md:text-3xl lg:text-4xl tracking-wide uppercase leading-none">
+          <h1 className="text-white font-black text-lg sm:text-xl md:text-3xl lg:text-4xl tracking-wide uppercase leading-none">
             Lavandería Y<br className="sm:hidden" /> Auto&#8209;Lavado
           </h1>
           <p className="text-blue-300 text-xs md:text-sm font-medium mt-0.5 hidden sm:block">
