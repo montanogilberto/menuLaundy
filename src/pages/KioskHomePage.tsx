@@ -233,7 +233,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
       {/* Service grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {wash?.services && (
-          <Section title="Lavado" services={wash.services} note={wash.note} note2="⚠️ El lavado es hecho por el cliente (autoservicio)." colorKey="wash" />
+          <Section title="Lavado" services={wash.services} note={wash.note} note2="El lavado es realizado por el cliente." colorKey="wash" />
         )}
         {dry?.services && (
           <Section title="Secado"            services={dry.services}  note={dry.note}                     colorKey="dry"      />
