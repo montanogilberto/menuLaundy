@@ -4,9 +4,10 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import KioskHomePage from './pages/KioskHomePage';
 import RewardsCheckPage from './pages/RewardsCheckPage';
+import ReservationPage from './pages/ReservationPage';
 import ReceiptModal from './components/ReceiptModal';
 
-type View = 'home' | 'rewards';
+type View = 'home' | 'rewards' | 'reservation';
 
 const RECEIPT_BASE = 'https://imageprofile.blob.core.windows.net/ticketspos/receipts';
 
@@ -34,11 +35,13 @@ function App() {
         <IonContent fullscreen>
           {view === 'rewards' ? (
             <RewardsCheckPage onBack={() => setView('home')} />
+          ) : view === 'reservation' ? (
+            <ReservationPage onBack={() => setView('home')} />
           ) : (
             <div className="min-h-screen flex flex-col">
               <Header onRewardsClick={() => setView('rewards')} />
               <main className="flex-1" role="main" aria-label="Contenido principal">
-                <KioskHomePage onViewReceipt={setReceiptId} />
+                <KioskHomePage onViewReceipt={setReceiptId} onReserve={() => setView('reservation')} />
               </main>
               <Footer />
             </div>

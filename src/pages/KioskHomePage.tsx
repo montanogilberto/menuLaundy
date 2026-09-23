@@ -70,6 +70,7 @@ function Section({ title, services, note, note2, colorKey }: SectionProps) {
 
 interface Props {
   onViewReceipt: (id: string) => void;
+  onReserve: () => void;
 }
 
 const COUNTRY_CODES = [
@@ -78,7 +79,7 @@ const COUNTRY_CODES = [
   { flag: '🇨🇦', label: 'CA', code: '+1'  },
 ];
 
-export default function KioskHomePage({ onViewReceipt }: Props) {
+export default function KioskHomePage({ onViewReceipt, onReserve }: Props) {
   const [step, setStep]           = useState<ReceiptStep>('idle');
   const [receiptId, setReceiptId] = useState('');
   const [phone, setPhone]         = useState('');
@@ -121,6 +122,20 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
 
       {/* Top banners row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        {/* Reservation CTA */}
+        <button onClick={onReserve}
+          className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-lg border-2 border-blue-400 hover:scale-[1.02] transition-transform text-left w-full">
+          <span className="text-3xl shrink-0">📅</span>
+          <div>
+            <p className="text-white font-black text-lg md:text-xl leading-tight">
+              Reservar un Servicio
+            </p>
+            <p className="text-blue-200 text-sm font-semibold mt-0.5">
+              Agenda tu <strong>Lavado</strong> o <strong>Secado</strong> — confirmación por SMS
+            </p>
+          </div>
+        </button>
+
         {/* Rewards promo */}
         <div className="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-lg border-2 border-yellow-300">
           <span className="text-3xl shrink-0">🎁</span>
