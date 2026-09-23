@@ -129,11 +129,11 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
         {/* INPUT */}
         {step === 'input' && (
-          <div className="max-w-md mx-auto flex flex-col items-center gap-6 pt-16 px-6">
-            <div className="text-7xl">📱</div>
+          <div className="max-w-md mx-auto flex flex-col items-center gap-5 sm:gap-6 pt-8 sm:pt-16 px-4 sm:px-6">
+            <div className="text-6xl sm:text-7xl">📱</div>
             <div className="text-center">
-              <h2 className="text-[#0a2d6e] font-black text-3xl">Consulta tus puntos</h2>
-              <p className="text-slate-500 mt-1">Ingresa tu número de teléfono</p>
+              <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">Consulta tus puntos</h2>
+              <p className="text-slate-500 text-sm sm:text-base mt-1">Ingresa tu número de teléfono</p>
             </div>
             <div className="w-full flex flex-col gap-3">
               <div className="relative">
@@ -142,18 +142,20 @@ export default function RewardsCheckPage({ onBack }: Props) {
                   ref={inputRef}
                   type="tel"
                   inputMode="numeric"
+                  autoComplete="tel-national"
+                  enterKeyHint="search"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
                   placeholder="Ej. 6621234567"
                   autoFocus
-                  className="w-full bg-white border-2 border-blue-200 focus:border-blue-500 rounded-2xl pl-12 pr-4 py-4 text-2xl font-semibold text-slate-800 outline-none transition-colors shadow"
+                  className="w-full bg-white border-2 border-blue-200 focus:border-blue-500 rounded-2xl pl-12 pr-4 py-3.5 sm:py-4 text-xl sm:text-2xl font-semibold text-slate-800 outline-none transition-colors shadow"
                 />
               </div>
               <button
                 onClick={handleSearch}
                 disabled={phone.replace(/\D/g, '').length < 10}
-                className="flex items-center justify-center gap-2 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-xl rounded-2xl py-4 transition-all shadow-lg hover:scale-105 active:scale-95"
+                className="flex items-center justify-center gap-2 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-lg sm:text-xl rounded-2xl py-3.5 sm:py-4 min-h-[52px] transition-all shadow-lg sm:hover:scale-105 active:scale-95"
               >
                 <Search className="w-5 h-5" /> CONSULTAR
               </button>
@@ -163,19 +165,19 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
         {/* LOADING */}
         {step === 'loading' && (
-          <div className="flex flex-col items-center justify-center gap-4 pt-24">
-            <Loader className="w-14 h-14 animate-spin text-blue-600" />
-            <p className="text-blue-700 text-xl font-semibold">Buscando tu cuenta…</p>
+          <div className="flex flex-col items-center justify-center gap-4 pt-16 sm:pt-24 px-4">
+            <Loader className="w-12 h-12 sm:w-14 sm:h-14 animate-spin text-blue-600" />
+            <p className="text-blue-700 text-lg sm:text-xl font-semibold text-center">Buscando tu cuenta…</p>
           </div>
         )}
 
         {/* NOT FOUND */}
         {step === 'not_found' && (
-          <div className="max-w-md mx-auto text-center pt-16 flex flex-col items-center gap-5 px-6">
-            <div className="text-8xl">😕</div>
-            <h2 className="text-[#0a2d6e] font-black text-3xl">No encontrado</h2>
-            <p className="text-slate-500 text-lg">No hallamos una cuenta con el número <strong>{phone}</strong>. Pregunta en caja para registrarte.</p>
-            <button onClick={handleReset} className="bg-[#0a2d6e] text-white font-black text-xl rounded-2xl px-10 py-4 hover:bg-blue-800 transition-all">
+          <div className="max-w-md mx-auto text-center pt-8 sm:pt-16 flex flex-col items-center gap-4 sm:gap-5 px-4 sm:px-6">
+            <div className="text-6xl sm:text-8xl">😕</div>
+            <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">No encontrado</h2>
+            <p className="text-slate-500 text-base sm:text-lg break-words">No hallamos una cuenta con el número <strong>{phone}</strong>. Pregunta en caja para registrarte.</p>
+            <button onClick={handleReset} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4 hover:bg-blue-800 transition-all">
               Intentar de nuevo
             </button>
           </div>
@@ -183,11 +185,11 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
         {/* ERROR */}
         {step === 'error' && (
-          <div className="max-w-md mx-auto text-center pt-16 flex flex-col items-center gap-5 px-6">
-            <div className="text-8xl">⚠️</div>
-            <h2 className="text-[#0a2d6e] font-black text-3xl">Error de conexión</h2>
-            <p className="text-red-500">{errMsg}</p>
-            <button onClick={handleReset} className="bg-[#0a2d6e] text-white font-black text-xl rounded-2xl px-10 py-4">Volver</button>
+          <div className="max-w-md mx-auto text-center pt-8 sm:pt-16 flex flex-col items-center gap-4 sm:gap-5 px-4 sm:px-6">
+            <div className="text-6xl sm:text-8xl">⚠️</div>
+            <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">Error de conexión</h2>
+            <p className="text-red-500 break-words">{errMsg}</p>
+            <button onClick={handleReset} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4">Volver</button>
           </div>
         )}
 
