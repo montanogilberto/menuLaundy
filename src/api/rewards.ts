@@ -1,6 +1,6 @@
 import { get, post } from './client';
 
-export const COMPANY_ID = 1;
+export const COMPANY_ID = Number(import.meta.env.VITE_COMPANY_ID ?? 1);
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,7 +52,18 @@ export interface CatalogItem {
   isActive?: boolean;
 }
 
+export interface Company {
+  companyId: number;
+  name: string;
+  businessType?: string;
+}
+
 // ── Endpoints ────────────────────────────────────────────────────────────────
+
+export async function getCompanies(): Promise<Company[]> {
+  const data: any = await get('/all_companies');
+  return data?.result?.[0]?.companies ?? data?.companies ?? [];
+}
 
 export async function findClientByPhone(cellphone: string): Promise<ClientInfo | null> {
   const data: any = await get('/all_clients');
