@@ -4,7 +4,7 @@ import {
   ArrowLeft, Phone, Search, Loader, RotateCcw,
   WashingMachine, Wind, Star, Gift, History,
   Bell, User, Home, Grid3X3, ChevronRight,
-  Receipt,
+  Receipt, Maximize2, X,
 } from 'lucide-react';
 import {
   findClientByPhone, getBalance, getLedger, getCatalog,
@@ -49,6 +49,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
   const [ledger, setLedger]   = useState<LedgerEntry[]>([]);
   const [catalog, setCatalog] = useState<RewardsCatalogItem[]>([]);
   const [errMsg, setErrMsg]   = useState('');
+  const [showQR, setShowQR]   = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = async () => {
@@ -358,16 +359,60 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
             {/* QR */}
             <div className="bg-white rounded-2xl shadow p-5 flex flex-col items-center gap-3">
-              <p className="text-[#0a2d6e] font-black text-base">Tu código QR</p>
-              <QRCodeSVG
-                value={`https://posvending.gmolavanderia.com/rewards-dashboard/${client.clientId}`}
-                size={160}
-                bgColor="#ffffff"
-                fgColor="#0a2d6e"
-                level="M"
-              />
-              <p className="text-slate-400 text-xs text-center">Muéstralo en caja para acumular o canjear puntos rápidamente.</p>
+              <div className="flex items-center justify-between w-full">
+                <p className="text-[#0a2d6e] font-black text-base">Tu código QR</p>
+                <button
+                  onClick={() => setShowQR(true)}
+                  className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-semibold border border-blue-200 rounded-lg px-2.5 py-1"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" /> Mostrar grande
+                </button>
+              </div>
+              <button onClick={() => setShowQR(true)} className="hover:opacity-80 transition-opacity">
+                <QRCodeSVG
+                  value={`https://posvending.gmolavanderia.com/rewards-dashboard/${client.clientId}`}
+                  size={160}
+                  bgColor="#ffffff"
+                  fgColor="#0a2d6e"
+                  level="M"
+                />
+              </button>
+              <p className="text-slate-400 text-xs text-center">Toca el QR o "Mostrar grande" para escanearlo en caja.</p>
             </div>
+
+            {/* Fullscreen QR modal */}
+            {showQR && (
+              <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center gap-6 px-6">
+                <button
+                  onClick={() => setShowQR(false)}
+                  className="absolute top-5 right-5 bg-slate-100 hover:bg-slate-200 rounded-full p-3"
+                >
+                  <X className="w-6 h-6 text-slate-600" />
+                </button>
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-[#0a2d6e] font-black text-2xl">{client.first_name} {client.last_name}</p>
+                  <p className="text-slate-400 text-sm">Cliente #{client.clientId}</p>
+                </div>
+                <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-[#0a2d6e]">
+                  <QRCodeSVG
+                    value={`https://posvending.gmolavanderia.com/rewards-dashboard/${client.clientId}`}
+                    size={Math.min(window.innerWidth - 80, 320)}
+                    bgColor="#ffffff"
+                    fgColor="#0a2d6e"
+                    level="H"
+                  />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <p className="text-slate-700 font-bold text-lg">
+                    {balance?.balance ?? 0} <span className="text-amber-500">★</span> puntos
+                  </p>
+                  <p className="text-slate-400 text-sm text-center">Muestra este código en caja para acumular o canjear puntos.</p>
+                </div>
+                <p className="text-slate-300 text-xs font-mono break-all text-center max-w-xs">
+                  posvending.gmolavanderia.com/rewards-dashboard/{client.clientId}
+                </p>
+              </div>
+            )}
 
             {/* Quick links */}
             <div className="bg-white rounded-2xl shadow overflow-hidden">
