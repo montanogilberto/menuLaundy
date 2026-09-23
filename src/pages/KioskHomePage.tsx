@@ -18,14 +18,14 @@ const SECTION_COLORS = {
 
 function ServiceCard({ service, accentClass }: { service: Service; accentClass: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-white rounded-2xl px-5 py-4 shadow border border-slate-100">
+    <div className="flex items-center justify-between gap-3 bg-white rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow border border-slate-100">
       <div className="flex-1 min-w-0">
-        <p className="text-slate-900 font-black text-xl md:text-2xl leading-tight truncate">{service.name}</p>
-        <p className="text-slate-500 text-sm md:text-base font-medium truncate">
+        <p className="text-slate-900 font-black text-lg sm:text-xl md:text-2xl leading-tight sm:truncate">{service.name}</p>
+        <p className="text-slate-500 text-xs sm:text-sm md:text-base font-medium leading-snug sm:truncate">
           {service.max}{service.maxDescription ? ` · ${service.maxDescription}` : ''}
         </p>
       </div>
-      <div className={`${accentClass} text-white font-black text-2xl md:text-3xl px-5 py-2 rounded-xl shadow whitespace-nowrap`}>
+      <div className={`${accentClass} text-white font-black text-xl sm:text-2xl md:text-3xl px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl shadow whitespace-nowrap shrink-0`}>
         {service.price}
       </div>
     </div>
@@ -43,18 +43,18 @@ interface SectionProps {
 function Section({ title, services, note, note2, colorKey }: SectionProps) {
   const c = SECTION_COLORS[colorKey];
   return (
-    <div className="flex flex-col rounded-3xl overflow-hidden shadow-2xl border border-slate-200 bg-white">
-      <div className={`bg-gradient-to-r ${c.header} px-6 py-4 flex items-center gap-3`}>
-        <span className="text-3xl">{c.icon}</span>
-        <h2 className="text-white font-black text-xl md:text-3xl tracking-widest uppercase">{title}</h2>
+    <div className="flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl border border-slate-200 bg-white">
+      <div className={`bg-gradient-to-r ${c.header} px-4 py-3 sm:px-6 sm:py-4 flex items-center gap-3`}>
+        <span className="text-2xl sm:text-3xl">{c.icon}</span>
+        <h2 className="text-white font-black text-lg sm:text-xl md:text-3xl tracking-wider sm:tracking-widest uppercase">{title}</h2>
       </div>
-      <div className="flex flex-col gap-2 p-4">
+      <div className="flex flex-col gap-2 p-3 sm:p-4">
         {services.map((s, i) => (
           <ServiceCard key={i} service={s} accentClass={c.accent} />
         ))}
       </div>
       {(note || note2) && (
-        <div className="px-4 pb-4 flex flex-col gap-1">
+        <div className="px-3 pb-3 sm:px-4 sm:pb-4 flex flex-col gap-1">
           {note  && <p className="text-slate-500 text-sm md:text-base" dangerouslySetInnerHTML={{ __html: note  }} />}
           {note2 && <p className="text-slate-400 text-xs md:text-sm italic"   dangerouslySetInnerHTML={{ __html: note2 }} />}
         </div>
@@ -77,8 +77,10 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
   const [step, setStep]           = useState<ReceiptStep>('idle');
   const [receiptId, setReceiptId] = useState('');
   const [phone, setPhone]         = useState('');
-  const [lada, setLada]           = useState('+52');
+  const [country, setCountry]     = useState('MX');
   const [errorMsg, setErrorMsg]   = useState('');
+
+  const lada = COUNTRY_CODES.find(c => c.label === country)?.code ?? '+52';
 
   const startFlow = () => {
     const id = receiptId.trim();
@@ -107,28 +109,28 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
     }
   };
 
-  const reset = () => { setStep('idle'); setReceiptId(''); setPhone(''); setLada('+52'); setErrorMsg(''); };
+  const reset = () => { setStep('idle'); setReceiptId(''); setPhone(''); setCountry('MX'); setErrorMsg(''); };
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-100 to-blue-50 p-4 md:p-6 lg:p-8 flex flex-col gap-5">
+    <div className="min-h-full bg-gradient-to-br from-slate-100 to-blue-50 p-3 sm:p-4 md:p-6 lg:p-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex flex-col gap-4 sm:gap-5">
 
       {/* Top banners row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {/* Rewards promo */}
-        <div className="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-2xl px-5 py-4 shadow-lg border-2 border-yellow-300">
+        <div className="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-lg border-2 border-yellow-300">
           <span className="text-3xl shrink-0">🎁</span>
           <div>
-            <p className="text-slate-900 font-black text-lg md:text-xl leading-tight">
+            <p className="text-slate-900 font-black text-base sm:text-lg md:text-xl leading-tight">
               ¡Acumula puntos con cada servicio!
             </p>
-            <p className="text-slate-800/70 text-sm font-semibold mt-0.5">
+            <p className="text-slate-800/70 text-xs sm:text-sm font-semibold mt-0.5">
               Presiona <strong>"Mis Puntos"</strong> para consultar tu saldo.
             </p>
           </div>
         </div>
 
         {/* Receipt lookup */}
-        <div className="flex flex-col justify-center gap-3 bg-white rounded-2xl px-5 py-4 shadow-lg border-2 border-slate-200">
+        <div className="flex flex-col justify-center gap-3 bg-white rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-lg border-2 border-slate-200">
           <div className="flex items-center gap-2">
             <Receipt className="w-5 h-5 text-blue-600 shrink-0" />
             <p className="text-slate-800 font-black text-base md:text-lg">Ver mi Recibo</p>
@@ -142,17 +144,18 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
                 <input
                   type="number"
                   inputMode="numeric"
+                  enterKeyHint="next"
                   value={receiptId}
                   onChange={e => { setReceiptId(e.target.value); setStep('enter_id'); }}
                   onKeyDown={e => e.key === 'Enter' && startFlow()}
-                  placeholder="Número de ticket — Ej. 4747"
+                  placeholder="Número de ticket"
                   className="w-full border-2 border-slate-200 focus:border-blue-500 rounded-xl pl-7 pr-3 py-2.5 text-lg font-semibold text-slate-800 outline-none transition-colors"
                 />
               </div>
               <button
                 onClick={startFlow}
                 disabled={!receiptId.trim()}
-                className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
+                className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all sm:hover:scale-105 active:scale-95 shrink-0"
               >
                 Siguiente
               </button>
@@ -163,22 +166,23 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
           {step === 'enter_phone' && (
             <div className="flex flex-col gap-2">
               <p className="text-slate-500 text-sm">Ticket <strong>#{receiptId}</strong> — ingresa tu número de celular para verificar:</p>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex flex-col sm:flex-row gap-2">
                 {/* Country / lada selector */}
                 <div className="flex rounded-xl border-2 border-blue-300 overflow-hidden shrink-0">
                   {COUNTRY_CODES.map(c => (
                     <button
-                      key={c.code + c.label}
-                      onClick={() => setLada(c.code)}
-                      className={`flex items-center gap-1 px-3 py-2.5 text-sm font-bold transition-colors ${lada === c.code ? 'bg-[#0a2d6e] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                      key={c.label}
+                      onClick={() => setCountry(c.label)}
+                      className={`flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-2.5 text-sm font-bold transition-colors ${country === c.label ? 'bg-[#0a2d6e] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
                     >
                       <span>{c.flag}</span>
-                      <span className="hidden sm:inline">{c.code}</span>
+                      <span>{c.label === 'MX' ? c.code : c.label}</span>
                     </button>
                   ))}
                 </div>
+                <div className="flex gap-2 flex-1 min-w-0">
                 {/* Phone number */}
-                <div className="relative flex-1 min-w-[140px]">
+                <div className="relative flex-1 min-w-0">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="tel"
@@ -187,16 +191,19 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
                     onChange={e => setPhone(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && verifyAndOpen()}
                     placeholder="10 dígitos"
+                    autoComplete="tel-national"
+                    enterKeyHint="search"
                     autoFocus
                     className="w-full border-2 border-blue-300 focus:border-blue-500 rounded-xl pl-9 pr-3 py-2.5 text-lg font-semibold text-slate-800 outline-none transition-colors"
                   />
                 </div>
                 <button onClick={verifyAndOpen} disabled={!phone.trim()}
-                  className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0">
+                  className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all sm:hover:scale-105 active:scale-95 shrink-0">
                   <Search className="w-4 h-4" /> Ver
                 </button>
+                </div>
               </div>
-              <button onClick={reset} className="text-slate-400 hover:text-slate-600 text-sm self-start">
+              <button onClick={reset} className="text-slate-400 hover:text-slate-600 text-sm self-start py-1">
                 ← Cancelar
               </button>
             </div>
