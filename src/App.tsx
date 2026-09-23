@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  IonApp, IonContent, IonPage,
+  IonApp, IonContent, IonPage, IonHeader,
   IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel,
   IonRouterOutlet,
 } from '@ionic/react';
@@ -12,11 +12,14 @@ import {
 } from 'ionicons/icons';
 
 import Header from './components/Header';
+import Footer from './components/Footer';
 import KioskHomePage from './pages/KioskHomePage';
 import RewardsCheckPage from './pages/RewardsCheckPage';
 import ReservationPage from './pages/ReservationPage';
 import QRPage from './pages/QRPage';
 import ReceiptModal from './components/ReceiptModal';
+import LoginPage from './pages/LoginPage';
+import RequireLogin from './components/RequireLogin';
 
 const RECEIPT_BASE = 'https://imageprofile.blob.core.windows.net/ticketspos/receipts';
 
@@ -43,9 +46,12 @@ function App() {
           <IonRouterOutlet>
             <Route exact path="/home">
               <IonPage>
-                <Header />
+                <IonHeader>
+                  <Header />
+                </IonHeader>
                 <IonContent fullscreen>
                   <KioskHomePage onViewReceipt={setReceiptId} />
+                  <Footer />
                 </IonContent>
               </IonPage>
             </Route>
@@ -53,7 +59,9 @@ function App() {
             <Route exact path="/reservar">
               <IonPage>
                 <IonContent fullscreen>
-                  <ReservationPage onBack={() => window.history.back()} />
+                  <RequireLogin>
+                    <ReservationPage onBack={() => window.history.back()} />
+                  </RequireLogin>
                 </IonContent>
               </IonPage>
             </Route>
@@ -61,7 +69,9 @@ function App() {
             <Route exact path="/qr">
               <IonPage>
                 <IonContent fullscreen>
-                  <QRPage />
+                  <RequireLogin>
+                    <QRPage />
+                  </RequireLogin>
                 </IonContent>
               </IonPage>
             </Route>
@@ -69,7 +79,9 @@ function App() {
             <Route exact path="/puntos">
               <IonPage>
                 <IonContent fullscreen>
-                  <RewardsCheckPage onBack={() => window.history.back()} />
+                  <RequireLogin>
+                    <RewardsCheckPage onBack={() => window.history.back()} />
+                  </RequireLogin>
                 </IonContent>
               </IonPage>
             </Route>
@@ -77,7 +89,17 @@ function App() {
             <Route exact path="/recompensas">
               <IonPage>
                 <IonContent fullscreen>
-                  <RewardsCheckPage onBack={() => window.history.back()} />
+                  <RequireLogin>
+                    <RewardsCheckPage onBack={() => window.history.back()} />
+                  </RequireLogin>
+                </IonContent>
+              </IonPage>
+            </Route>
+
+            <Route exact path="/login">
+              <IonPage>
+                <IonContent fullscreen>
+                  <LoginPage afterLogin="home" />
                 </IonContent>
               </IonPage>
             </Route>

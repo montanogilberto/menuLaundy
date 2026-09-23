@@ -1,15 +1,17 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useHistory, useLocation } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  ArrowLeft, Phone, Search, Loader, RotateCcw,
+  ArrowLeft, Phone, Search, Loader, LogOut,
   WashingMachine, Wind, Star, Gift, History,
-  Bell, User, Home, Grid3X3, ChevronRight,
+  Bell, User, ChevronRight,
   Receipt, Maximize2, X,
 } from 'lucide-react';
 import {
   findClientByPhone, getBalance, getLedger, getCatalog, getProductCounts,
   ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry, ProductCount,
 } from '../api/rewards';
+import { useClientSession, saveClientSession, clearClientSession } from '../lib/clientSession';
 
 interface Props { onBack: () => void; }
 type Step = 'input' | 'loading' | 'result' | 'not_found' | 'error';
@@ -52,17 +54,29 @@ export default function RewardsCheckPage({ onBack }: Props) {
   const [errMsg, setErrMsg]           = useState('');
   const [showQR, setShowQR]           = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const history  = useHistory();
+  const session  = useClientSession();
+  const { pathname } = useLocation();
+  const pointsRef  = useRef<HTMLDivElement>(null);
+  const catalogRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = async () => {
-    const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length < 10) return;
+  // Dashboard shortcuts: jump to points / history / rewards catalog further down the page
+  const goTo = (target: 'points' | 'history' | 'catalog') => {
+    if (target !== 'catalog') setTab(target);
+    const el = target === 'catalog' ? (catalogRef.current ?? pointsRef.current) : pointsRef.current;
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Load the dashboard for a client found by phone or restored from the saved session
+  const loadClient = async (lookup: () => Promise<ClientInfo | null>) => {
     setStep('loading');
     try {
       const [found, cat] = await Promise.all([
-        findClientByPhone(cleaned),
+        lookup(),
         getCatalog().catch(() => [] as RewardsCatalogItem[]),
       ]);
       if (!found) { setStep('not_found'); return; }
+      saveClientSession(found);
       const [bal, led, counts] = await Promise.all([
         getBalance(found.clientId).catch(() => null),
         getLedger(found.clientId).catch(() => [] as LedgerEntry[]),
@@ -75,9 +89,37 @@ export default function RewardsCheckPage({ onBack }: Props) {
     }
   };
 
-  const handleReset = () => {
+  const handleSearch = () => {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length < 10) return;
+    loadClient(() => findClientByPhone(cleaned));
+  };
+
+  const clearView = () => {
     setPhone(''); setClient(null); setBalance(null); setLedger([]); setCatalog([]); setProductCounts([]);
     setStep('input'); setTab('points');
+  };
+
+  // Session started (here or on another tab) → open the dashboard; session ended → back to input
+  useEffect(() => {
+    if (session && session.clientId !== client?.clientId) {
+      loadClient(async () => ({ ...session, companyId: 0 } as ClientInfo));
+    } else if (!session && client) {
+      clearView();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.clientId]);
+
+  // The Recompensas tab shows the same dashboard, opened at the rewards catalog
+  useEffect(() => {
+    if (step === 'result' && pathname === '/recompensas') {
+      setTimeout(() => catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    }
+  }, [step, pathname, catalog.length]);
+
+  const handleReset = () => {
+    clearClientSession();
+    clearView();
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
@@ -85,6 +127,14 @@ export default function RewardsCheckPage({ onBack }: Props) {
   const progress = tierProgress(pts);
   const next     = nextTier(pts);
   const recent   = ledger.slice(0, 10);
+
+  // Free services earned on 3+1 cards: every `requiredPoints` purchases of that product = 1 free
+  const freeFor = (item: RewardsCatalogItem) => {
+    if (item.rewardType !== 'free_product' || item.freeProductId == null || !item.requiredPoints) return 0;
+    const units = productCounts.find(p => p.productId === item.freeProductId)?.unitsAvailable ?? 0;
+    return Math.floor(units / item.requiredPoints);
+  };
+  const totalFree = catalog.reduce((n, item) => n + freeFor(item), 0);
 
   // ── SHELL ───────────────────────────────────────────────────────────────────
   return (
@@ -117,8 +167,8 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 <p className="text-blue-300 text-[10px]">Cliente</p>
               </div>
             </div>
-            <button onClick={handleReset} className="text-white/60 hover:text-white p-1">
-              <RotateCcw className="w-4 h-4" />
+            <button onClick={handleReset} className="flex items-center gap-1 text-white/80 hover:text-white text-xs font-bold border border-white/30 rounded-lg px-2 py-1">
+              <LogOut className="w-4 h-4" /> Salir
             </button>
           </div>
         ) : (
@@ -127,7 +177,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
       </div>
 
       {/* ── CONTENT ── */}
-      <div className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
+      <div className="flex-1 overflow-y-auto pb-6">
 
         {/* INPUT */}
         {step === 'input' && (
@@ -179,7 +229,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             <div className="text-6xl sm:text-8xl">😕</div>
             <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">No encontrado</h2>
             <p className="text-slate-500 text-lg break-words">No hallamos una cuenta con el número <strong>{phone}</strong>. Pregunta en caja para registrarte.</p>
-            <button onClick={handleReset} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4 hover:bg-blue-800 transition-all">
+            <button onClick={clearView} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4 hover:bg-blue-800 transition-all">
               Intentar de nuevo
             </button>
           </div>
@@ -191,7 +241,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             <div className="text-6xl sm:text-8xl">⚠️</div>
             <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">Error de conexión</h2>
             <p className="text-red-500 break-words">{errMsg}</p>
-            <button onClick={handleReset} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4">Volver</button>
+            <button onClick={clearView} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4">Volver</button>
           </div>
         )}
 
@@ -214,27 +264,38 @@ export default function RewardsCheckPage({ onBack }: Props) {
                   <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                   <span className="text-white font-black text-3xl">{fmt(pts)}</span>
                 </div>
-                <button className="text-cyan-300 text-xs font-semibold flex items-center gap-0.5 sm:mx-auto">
+                <button onClick={() => goTo('points')} className="text-cyan-300 text-xs font-semibold flex items-center gap-0.5 sm:mx-auto">
                   Ver detalles <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
+              {totalFree > 0 && (
+                <button
+                  onClick={() => goTo('catalog')}
+                  className="w-full flex items-center justify-between gap-2 bg-green-500 hover:bg-green-400 rounded-2xl px-4 py-3 text-left shadow"
+                >
+                  <span className="flex items-center gap-2 text-white font-black text-lg">
+                    <Gift className="w-6 h-6" /> {fmt(totalFree)} {totalFree === 1 ? 'servicio gratis' : 'servicios gratis'}
+                  </span>
+                  <span className="text-white/90 text-sm font-bold flex items-center shrink-0">Ver <ChevronRight className="w-4 h-4" /></span>
+                </button>
+              )}
             </div>
 
             {/* Quick actions */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {[
-                { icon: <WashingMachine className="w-7 h-7 text-white" />, bg: 'bg-blue-500',   label: 'Lavado',       sub: 'Solicita un servicio' },
-                { icon: <Wind className="w-7 h-7 text-white" />,          bg: 'bg-purple-500',  label: 'Secado',       sub: 'Solicita un servicio' },
-                { icon: <Star className="w-7 h-7 text-white" />,          bg: 'bg-amber-400',   label: 'Mis Puntos',   sub: 'Ver y canjear' },
-                { icon: <Gift className="w-7 h-7 text-white" />,          bg: 'bg-emerald-500', label: 'Recompensas',  sub: 'Tus beneficios' },
-              ].map(({ icon, bg, label, sub }) => (
-                <div key={label} className="bg-white rounded-2xl p-3 flex sm:flex-col items-center gap-2.5 sm:gap-2 shadow text-left sm:text-center cursor-pointer hover:shadow-md transition-shadow min-w-0">
+                { icon: <WashingMachine className="w-7 h-7 text-white" />, bg: 'bg-blue-500',   label: 'Lavado',       sub: 'Solicita un servicio', onClick: () => history.push('/reservar?servicio=lavado') },
+                { icon: <Wind className="w-7 h-7 text-white" />,          bg: 'bg-purple-500',  label: 'Secado',       sub: 'Solicita un servicio', onClick: () => history.push('/reservar?servicio=secado') },
+                { icon: <Star className="w-7 h-7 text-white" />,          bg: 'bg-amber-400',   label: 'Mis Puntos',   sub: 'Ver y canjear', onClick: () => goTo('points') },
+                { icon: <Gift className="w-7 h-7 text-white" />,          bg: 'bg-emerald-500', label: 'Recompensas',  sub: 'Tus beneficios', onClick: () => goTo('catalog') },
+              ].map(({ icon, bg, label, sub, onClick }: { icon: JSX.Element; bg: string; label: string; sub: string; onClick?: () => void }) => (
+                <button key={label} type="button" onClick={onClick} className="bg-white rounded-2xl p-3 flex sm:flex-col items-center gap-2.5 sm:gap-2 shadow text-left sm:text-center cursor-pointer hover:shadow-md active:scale-95 transition min-w-0">
                   <div className={`${bg} w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shadow shrink-0 [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-7 sm:[&>svg]:h-7`}>{icon}</div>
                   <div className="min-w-0">
                     <p className="text-slate-800 font-bold text-sm leading-tight">{label}</p>
                     <p className="text-slate-400 text-xs sm:text-[10px] leading-tight mt-0.5">{sub}</p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -243,7 +304,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
               <div className="bg-white rounded-2xl p-4 shadow">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-[#0a2d6e] font-black text-base">Estado de tus servicios</h3>
-                  <button className="text-blue-600 text-xs font-semibold flex items-center gap-0.5">
+                  <button onClick={() => goTo('history')} className="text-blue-600 text-xs font-semibold flex items-center gap-0.5">
                     Ver historial <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -251,7 +312,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                   <WashingMachine className="w-10 h-10 text-blue-400" />
                   <p className="text-blue-700 font-bold text-sm">No tienes servicios en proceso</p>
                   <p className="text-blue-400 text-xs">¡Programa tu próximo lavado o secado!</p>
-                  <button className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1 mt-1">
+                  <button onClick={() => history.push('/reservar')} className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1 mt-1">
                     Nuevo servicio <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -262,7 +323,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 <div className="text-3xl sm:text-4xl mb-2">🎁✨</div>
                 <div>
                   <p className="text-white font-black text-xl leading-tight">Canjea tus puntos<br/>en grandes beneficios</p>
-                  <button className="mt-3 bg-blue-500 hover:bg-blue-400 text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-1">
+                  <button onClick={() => goTo('catalog')} className="mt-3 bg-blue-500 hover:bg-blue-400 text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-1">
                     Ver recompensas <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -270,7 +331,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             </div>
 
             {/* Points / History tabs */}
-            <div className="bg-white rounded-2xl shadow overflow-hidden">
+            <div ref={pointsRef} className="bg-white rounded-2xl shadow overflow-hidden scroll-mt-20">
               <div className="flex border-b border-slate-100">
                 {(['points', 'history'] as Tab[]).map(t => (
                   <button
@@ -301,7 +362,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                       {next ? `${progress}% para tu próxima recompensa (nivel ${next.label})` : '¡Nivel máximo alcanzado! 🥇'}
                     </p>
                   </div>
-                  <button className="text-blue-600 text-xs font-bold text-center sm:text-right shrink-0 leading-tight w-full sm:w-auto border-t sm:border-0 border-slate-100 pt-3 sm:pt-0">
+                  <button onClick={() => goTo('catalog')} className="text-blue-600 text-xs font-bold text-center sm:text-right shrink-0 leading-tight w-full sm:w-auto border-t sm:border-0 border-slate-100 pt-3 sm:pt-0">
                     Ver catálogo<br className="hidden sm:block"/> de recompensas <ChevronRight className="w-3 h-3 inline" />
                   </button>
                 </div>
@@ -335,7 +396,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
             {/* Catalog */}
             {catalog.length > 0 && (
-              <div className="bg-white rounded-2xl shadow overflow-hidden">
+              <div ref={catalogRef} className="bg-white rounded-2xl shadow overflow-hidden scroll-mt-20">
                 <div className="px-4 py-3 border-b border-slate-100">
                   <h3 className="text-[#0a2d6e] font-black text-lg">Catálogo de Recompensas</h3>
                 </div>
@@ -407,7 +468,9 @@ export default function RewardsCheckPage({ onBack }: Props) {
                           </div>
                           )}
                           {canRedeem
-                            ? <span className="inline-block mt-2 bg-green-100 text-green-700 text-sm font-bold px-3 py-1 rounded-full">¡Disponible!</span>
+                            ? <span className="inline-block mt-2 bg-green-100 text-green-700 text-sm font-bold px-3 py-1 rounded-full">
+                                {isStamps && freeFor(item) > 1 ? `¡Tienes ${fmt(freeFor(item))} gratis!` : '¡Disponible!'}
+                              </span>
                             : <p className="text-slate-500 text-sm mt-1.5">
                                 {isStamps
                                   ? <>Te {missing === 1 ? 'falta' : 'faltan'} <strong className="text-[#0a2d6e]">{missing}</strong> para tu gratis</>
@@ -419,7 +482,21 @@ export default function RewardsCheckPage({ onBack }: Props) {
                     );
                   })}
                 </div>
-                <p className="text-slate-500 text-sm text-center px-4 py-3">Acércate a caja para canjear tus puntos.</p>
+                {/* How to redeem: the cashier applies it in the POS after scanning the client QR */}
+                <div className="bg-blue-50 border-t border-blue-100 px-4 py-4">
+                  <p className="text-[#0a2d6e] font-black text-base mb-2">¿Cómo canjear?</p>
+                  <ol className="text-slate-600 text-sm space-y-1.5 mb-3">
+                    <li><strong className="text-[#0a2d6e]">1.</strong> Ve a caja y di qué servicio gratis quieres usar.</li>
+                    <li><strong className="text-[#0a2d6e]">2.</strong> Muestra tu código QR al cajero.</li>
+                    <li><strong className="text-[#0a2d6e]">3.</strong> El cajero aplica tu recompensa y se descuenta de tu cuenta.</li>
+                  </ol>
+                  <button
+                    onClick={() => setShowQR(true)}
+                    className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-[#0a2d6e] hover:bg-blue-800 text-white font-black rounded-xl"
+                  >
+                    <Maximize2 className="w-5 h-5" /> Mostrar mi QR
+                  </button>
+                </div>
               </div>
             )}
 
@@ -511,7 +588,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 <p className="text-[#0a2d6e] font-black text-sm">¡Gana más con cada servicio!</p>
                 <p className="text-blue-400 text-xs">Tus puntos son la llave a grandes recompensas.</p>
               </div>
-              <button className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center justify-center gap-1 shrink-0 w-full sm:w-auto">
+              <button onClick={() => goTo('catalog')} className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center justify-center gap-1 shrink-0 w-full sm:w-auto">
                 Ver catálogo <ChevronRight className="w-3 h-3" />
               </button>
             </div>
@@ -520,23 +597,6 @@ export default function RewardsCheckPage({ onBack }: Props) {
         )}
       </div>
 
-      {/* ── BOTTOM NAV (dashboard only) ── */}
-      {step === 'result' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-[#0a2d6e] border-t border-blue-800 flex justify-around pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] z-10">
-          {[
-            { icon: <Home className="w-5 h-5" />,    label: 'Inicio',    active: true  },
-            { icon: <Grid3X3 className="w-5 h-5" />, label: 'Servicios', active: false },
-            { icon: <Star className="w-5 h-5" />,    label: 'Mis Puntos',active: false },
-            { icon: <User className="w-5 h-5" />,    label: 'Perfil',    active: false },
-          ].map(({ icon, label, active }) => (
-            <button key={label} className={`flex-1 flex flex-col items-center gap-1 py-1 min-h-[44px] transition-colors ${active ? 'text-white' : 'text-blue-400'}`}>
-              {icon}
-              <span className="text-xs font-semibold">{label}</span>
-              {active && <div className="w-1 h-1 bg-white rounded-full" />}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Search, Receipt, Phone, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Receipt, Phone, AlertCircle, Loader2, LogOut, UserCheck, LogIn } from 'lucide-react';
 import { slides } from '../data/services';
 import { Service } from '../types';
 import { findClientByPhone } from '../api/rewardsCheckApi';
+import { useClientSession, saveClientSession, clearClientSession } from '../lib/clientSession';
 
 type ReceiptStep = 'idle' | 'enter_id' | 'enter_phone' | 'loading' | 'error';
 
@@ -86,12 +87,16 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
   const [phone, setPhone]         = useState('');
   const [country, setCountry]     = useState('MX');
   const [errorMsg, setErrorMsg]   = useState('');
+  const session = useClientSession();
 
   const lada = COUNTRY_CODES.find(c => c.label === country)?.code ?? '+52';
 
   const startFlow = () => {
     const id = receiptId.trim();
-    if (id) setStep('enter_phone');
+    if (!id) return;
+    // Already verified on this device → open the receipt directly
+    if (session) { setStep('idle'); setReceiptId(''); onViewReceipt(id); return; }
+    setStep('enter_phone');
   };
 
   const verifyAndOpen = async () => {
@@ -102,6 +107,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
     try {
       const client = await findClientByPhone(lada + tel);
       if (client) {
+        saveClientSession(client);
         setStep('idle');
         setReceiptId('');
         setPhone('');
@@ -120,6 +126,37 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
 
   return (
     <div className="min-h-full bg-gradient-to-br from-slate-100 to-blue-50 p-3 sm:p-4 md:p-6 lg:p-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex flex-col gap-4 sm:gap-5">
+
+      {/* Login option (logged out) / logged-in customer */}
+      {!session && (
+        <button
+          onClick={() => history.push('/login')}
+          className="w-full flex items-center gap-3 bg-white rounded-2xl shadow px-4 py-3 border-2 border-blue-200 active:scale-[0.98] transition-transform text-left"
+        >
+          <div className="w-11 h-11 rounded-xl bg-[#0a2d6e] flex items-center justify-center shrink-0">
+            <LogIn className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-slate-900 font-black text-base leading-tight">Iniciar sesión</p>
+            <p className="text-slate-500 text-sm leading-tight mt-0.5">Con tu número de celular para ver puntos, QR y reservar</p>
+          </div>
+          <span className="shrink-0 bg-[#0a2d6e] text-white font-bold text-sm px-3 py-2 rounded-xl">Entrar</span>
+        </button>
+      )}
+      {session && (
+        <div className="flex items-center gap-3 bg-white rounded-2xl shadow px-4 py-3 border-2 border-green-200">
+          <UserCheck className="w-6 h-6 text-green-600 shrink-0" />
+          <p className="flex-1 min-w-0 text-slate-800 font-bold text-base truncate">
+            Hola, {session.first_name} 👋
+          </p>
+          <button
+            onClick={clearClientSession}
+            className="flex items-center gap-1 text-slate-500 hover:text-red-600 text-sm font-bold border border-slate-200 rounded-lg px-2.5 py-1.5 shrink-0"
+          >
+            <LogOut className="w-4 h-4" /> Salir
+          </button>
+        </div>
+      )}
 
       {/* MIS PUNTOS — big tappable CTA */}
       <button
@@ -154,6 +191,21 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
             </div>
           </div>
         </div>
+      </button>
+
+      {/* RESERVAR — quick access card */}
+      <button
+        onClick={() => history.push('/reservar')}
+        className="w-full flex items-center gap-4 bg-white rounded-2xl shadow-lg border-2 border-blue-100 px-5 py-4 active:scale-[0.98] transition-transform"
+      >
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shrink-0 shadow">
+          <span className="text-3xl">📅</span>
+        </div>
+        <div className="flex-1 text-left min-w-0">
+          <p className="text-slate-900 font-black text-xl leading-tight">Reservar Servicio</p>
+          <p className="text-slate-500 text-sm mt-0.5">Agenda tu lavado o secado</p>
+        </div>
+        <div className="shrink-0 text-blue-600 font-black text-2xl">→</div>
       </button>
 
       {/* Second row: receipt + promo note */}
@@ -196,7 +248,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
                 disabled={!receiptId.trim()}
                 className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all sm:hover:scale-105 active:scale-95 shrink-0"
               >
-                Siguiente
+                {session ? 'Ver recibo' : 'Siguiente'}
               </button>
             </div>
           )}

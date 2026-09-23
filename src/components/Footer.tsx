@@ -6,7 +6,7 @@ const iconMap = { Facebook, Instagram, MessageCircle };
 export default function Footer() {
   return (
     <footer className="bg-slate-900 border-t-2 border-blue-800 flex-shrink-0">
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-10 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex flex-col md:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-10 py-4 flex flex-col md:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
 
         {/* Contact */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-slate-300 text-sm md:text-base">

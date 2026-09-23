@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Calendar, Clock, ChevronLeft, ChevronRight,
   User, Phone, Mail, CheckCircle, AlertCircle, Loader2, X,
 } from 'lucide-react';
-import { createReservation, ServiceType } from '../api/reservationsApi';
+import { createReservation, listReservations, ServiceType } from '../api/reservationsApi';
+import { useClientSession, localPhone } from '../lib/clientSession';
 
 type Step = 'service' | 'datetime' | 'contact' | 'confirm' | 'success' | 'error';
 
@@ -50,8 +52,53 @@ export default function ReservationPage({ onBack }: { onBack: () => void }) {
   const [loading, setLoading]         = useState(false);
   const [errorMsg, setErrorMsg]       = useState('');
   const [reservationId, setReservationId] = useState<number | null>(null);
+  const [takenSlots, setTakenSlots]   = useState<Set<string>>(new Set());
+  const [slotsLoading, setSlotsLoading] = useState(false);
 
   const today = isoDate(new Date());
+  const session = useClientSession();
+
+  // Pre-fill contact details for a logged-in customer
+  useEffect(() => {
+    if (!session) return;
+    setName(n => n || `${session.first_name} ${session.last_name}`.trim());
+    setPhone(p => p || localPhone(session.cellphone));
+    setEmail(e => e || session.email || '');
+  }, [session?.clientId]);
+
+  // Load booked slots for the selected date + service (same rule as the backend's slot_taken check)
+  useEffect(() => {
+    if (!selectedDate || !service) { setTakenSlots(new Set()); return; }
+    let cancelled = false;
+    setSlotsLoading(true);
+    listReservations({ date: selectedDate })
+      .then(list => {
+        if (cancelled) return;
+        setTakenSlots(new Set(
+          list
+            .filter(r => r.reservationDate?.slice(0, 10) === selectedDate
+                      && r.serviceType === service
+                      && r.status !== 'cancelled')
+            .map(r => r.timeSlot.trim().slice(0, 5))
+        ));
+      })
+      .catch(() => { if (!cancelled) setTakenSlots(new Set()); })
+      .finally(() => { if (!cancelled) setSlotsLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedDate, service, reservationId]);
+
+  const now = new Date();
+  const nowHHMM = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  // Preselect service from ?servicio=lavado|secado (e.g. from the rewards dashboard)
+  const { search } = useLocation();
+  useEffect(() => {
+    const s = new URLSearchParams(search).get('servicio');
+    if (s && SERVICES.some(x => x.type === s)) {
+      setService(s as ServiceType);
+      setStep('datetime');
+    }
+  }, [search]);
 
   // ── Calendar helpers ──────────────────────────────────────────────────────
   const daysInMonth = new Date(calMonth.y, calMonth.m + 1, 0).getDate();
@@ -82,10 +129,16 @@ export default function ReservationPage({ onBack }: { onBack: () => void }) {
         timeSlot: selectedSlot,
       });
       if (result.error) {
-        setErrorMsg(result.message || result.error === 'slot_taken'
-          ? 'Este horario ya está reservado. Por favor elige otro.'
-          : 'No se pudo crear la reservación. Intenta de nuevo.');
-        setStep('error');
+        if (result.error === 'slot_taken') {
+          // Someone booked it first: mark it taken and send them back to pick another time
+          setTakenSlots(prev => new Set(prev).add(selectedSlot));
+          setSelectedSlot('');
+          setErrorMsg('Este horario ya está reservado. Por favor elige otro.');
+          setStep('datetime');
+        } else {
+          setErrorMsg(result.message || 'No se pudo crear la reservación. Intenta de nuevo.');
+          setStep('error');
+        }
       } else {
         setReservationId(result.reservation?.reservationId ?? null);
         setStep('success');
@@ -177,7 +230,7 @@ export default function ReservationPage({ onBack }: { onBack: () => void }) {
                   const isSel  = iso === selectedDate;
                   return (
                     <button key={i} disabled={isPast}
-                      onClick={() => { setSelectedDate(iso); setSelectedSlot(''); }}
+                      onClick={() => { setSelectedDate(iso); setSelectedSlot(''); setErrorMsg(''); }}
                       className={`aspect-square rounded-full text-sm font-medium transition-colors
                         ${isPast ? 'text-gray-300 cursor-not-allowed' :
                           isSel  ? 'bg-blue-700 text-white' :
@@ -197,18 +250,45 @@ export default function ReservationPage({ onBack }: { onBack: () => void }) {
                   <p className="font-bold text-gray-800">Selecciona un horario</p>
                 </div>
                 <p className="text-sm text-blue-700 font-medium mb-3 capitalize">{displayDate(selectedDate)}</p>
+                {errorMsg && step === 'datetime' && (
+                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-semibold rounded-xl px-3 py-2 mb-3">
+                    <AlertCircle className="w-4 h-4 shrink-0" /> {errorMsg}
+                  </div>
+                )}
+                {slotsLoading ? (
+                  <div className="flex items-center justify-center gap-2 text-gray-400 text-sm py-6">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Consultando disponibilidad…
+                  </div>
+                ) : (
+                <>
                 <div className="grid grid-cols-4 gap-2">
-                  {TIME_SLOTS.map(slot => (
-                    <button key={slot}
-                      onClick={() => setSelectedSlot(slot)}
-                      className={`py-2 rounded-xl text-sm font-semibold border-2 transition-colors
-                        ${selectedSlot === slot
-                          ? 'bg-blue-700 text-white border-blue-700'
-                          : 'border-gray-200 text-gray-700 hover:border-blue-400'}`}>
-                      {slot}
-                    </button>
-                  ))}
+                  {TIME_SLOTS.map(slot => {
+                    const taken = takenSlots.has(slot);
+                    const past  = selectedDate === today && slot <= nowHHMM;
+                    const off   = taken || past;
+                    return (
+                      <button key={slot}
+                        disabled={off}
+                        onClick={() => { setSelectedSlot(slot); setErrorMsg(''); }}
+                        className={`py-2 rounded-xl text-sm font-semibold border-2 transition-colors flex flex-col items-center leading-tight
+                          ${selectedSlot === slot
+                            ? 'bg-blue-700 text-white border-blue-700'
+                            : taken
+                              ? 'bg-red-50 border-red-100 text-red-300 cursor-not-allowed'
+                              : past
+                                ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                                : 'border-gray-200 text-gray-700 hover:border-blue-400'}`}>
+                        <span className={taken ? 'line-through' : ''}>{slot}</span>
+                        {taken && <span className="text-[10px] font-bold text-red-400 no-underline">Ocupado</span>}
+                      </button>
+                    );
+                  })}
                 </div>
+                {TIME_SLOTS.every(s => takenSlots.has(s) || (selectedDate === today && s <= nowHHMM)) && (
+                  <p className="text-center text-sm text-gray-500 mt-3">No hay horarios disponibles este día. Elige otra fecha.</p>
+                )}
+                </>
+                )}
               </div>
             )}
 

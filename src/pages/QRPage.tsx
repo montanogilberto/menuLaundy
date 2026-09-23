@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Phone, Loader2, AlertCircle, X } from 'lucide-react';
+import { Phone, Loader2, AlertCircle, LogOut } from 'lucide-react';
 import { findClientByPhone } from '../api/rewardsCheckApi';
 import { ClientInfo } from '../api/rewards';
+import { useClientSession, saveClientSession, clearClientSession } from '../lib/clientSession';
 
 type Step = 'enter_phone' | 'loading' | 'show' | 'error';
 
@@ -20,6 +21,18 @@ export default function QRPage() {
   const [phone, setPhone]   = useState('');
   const [client, setClient] = useState<ClientInfo | null>(null);
   const [error, setError]   = useState('');
+  const session = useClientSession();
+
+  // Logged in on this device → show the QR straight away; logged out → ask again
+  useEffect(() => {
+    if (session) {
+      setClient({ ...session, companyId: 0 } as ClientInfo);
+      setStep('show');
+    } else {
+      setClient(null);
+      setStep('enter_phone');
+    }
+  }, [session?.clientId]);
 
   async function handleLookup() {
     const tel = phone.trim();
@@ -28,6 +41,7 @@ export default function QRPage() {
     try {
       const found = await findClientByPhone(lada + tel);
       if (found) {
+        saveClientSession(found);
         setClient(found);
         setStep('show');
       } else {
@@ -81,7 +95,9 @@ export default function QRPage() {
                 onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                 onKeyDown={e => e.key === 'Enter' && handleLookup()}
                 placeholder="6621234567"
-                className="flex-1 border-2 border-gray-200 focus:border-blue-500 rounded-xl px-4 py-3 text-lg outline-none"
+                type="tel"
+                inputMode="numeric"
+                className="flex-1 min-w-0 border-2 border-gray-200 focus:border-blue-500 rounded-xl px-3 py-3 text-lg outline-none"
               />
             </div>
             <button
@@ -122,9 +138,9 @@ export default function QRPage() {
             <p className="text-xs text-gray-400 font-mono break-all">{qrValue}</p>
           </div>
 
-          <button onClick={reset}
+          <button onClick={() => { clearClientSession(); reset(); }}
             className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-            <X className="w-4 h-4" /> Cerrar
+            <LogOut className="w-4 h-4" /> Salir
           </button>
         </div>
       )}
