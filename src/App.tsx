@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
-import { IonApp, IonContent, IonPage } from '@ionic/react';
+import {
+  IonApp, IonContent, IonPage,
+  IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel,
+  IonRouterOutlet,
+} from '@ionic/react';
+import { IonReactRouter } from '@ionic/react-router';
+import { Route, Redirect } from 'react-router-dom';
+import {
+  homeOutline, calendarOutline, qrCodeOutline,
+  starOutline, giftOutline,
+} from 'ionicons/icons';
+
 import Header from './components/Header';
-import Footer from './components/Footer';
 import KioskHomePage from './pages/KioskHomePage';
 import RewardsCheckPage from './pages/RewardsCheckPage';
 import ReservationPage from './pages/ReservationPage';
+import QRPage from './pages/QRPage';
 import ReceiptModal from './components/ReceiptModal';
-
-type View = 'home' | 'rewards' | 'reservation';
 
 const RECEIPT_BASE = 'https://imageprofile.blob.core.windows.net/ticketspos/receipts';
 
@@ -19,10 +28,8 @@ function receiptUrl(id: string) {
 }
 
 function App() {
-  const [view, setView]             = useState<View>('home');
-  const [receiptId, setReceiptId]   = useState<string | null>(null);
+  const [receiptId, setReceiptId] = useState<string | null>(null);
 
-  // Auto-open receipt if ?receipt=XXXX is in the URL (e.g. from QR scan)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('receipt');
@@ -31,37 +38,95 @@ function App() {
 
   return (
     <IonApp>
-      <IonPage>
-        <IonContent fullscreen>
-          {view === 'rewards' ? (
-            <RewardsCheckPage onBack={() => setView('home')} />
-          ) : view === 'reservation' ? (
-            <ReservationPage onBack={() => setView('home')} />
-          ) : (
-            <div className="min-h-screen flex flex-col">
-              <Header onRewardsClick={() => setView('rewards')} />
-              <main className="flex-1" role="main" aria-label="Contenido principal">
-                <KioskHomePage onViewReceipt={setReceiptId} onReserve={() => setView('reservation')} />
-              </main>
-              <Footer />
-            </div>
-          )}
+      <IonReactRouter>
+        <IonTabs>
+          <IonRouterOutlet>
+            <Route exact path="/home">
+              <IonPage>
+                <Header />
+                <IonContent fullscreen>
+                  <KioskHomePage onViewReceipt={setReceiptId} />
+                </IonContent>
+              </IonPage>
+            </Route>
 
-          {/* Receipt modal — shown over any view */}
-          {receiptId && (
-            <ReceiptModal
-              url={receiptUrl(receiptId)}
-              onClose={() => {
-                setReceiptId(null);
-                // Clean up URL param without reload
-                const url = new URL(window.location.href);
-                url.searchParams.delete('receipt');
-                window.history.replaceState({}, '', url);
-              }}
-            />
-          )}
-        </IonContent>
-      </IonPage>
+            <Route exact path="/reservar">
+              <IonPage>
+                <IonContent fullscreen>
+                  <ReservationPage onBack={() => window.history.back()} />
+                </IonContent>
+              </IonPage>
+            </Route>
+
+            <Route exact path="/qr">
+              <IonPage>
+                <IonContent fullscreen>
+                  <QRPage />
+                </IonContent>
+              </IonPage>
+            </Route>
+
+            <Route exact path="/puntos">
+              <IonPage>
+                <IonContent fullscreen>
+                  <RewardsCheckPage onBack={() => window.history.back()} />
+                </IonContent>
+              </IonPage>
+            </Route>
+
+            <Route exact path="/recompensas">
+              <IonPage>
+                <IonContent fullscreen>
+                  <RewardsCheckPage onBack={() => window.history.back()} />
+                </IonContent>
+              </IonPage>
+            </Route>
+
+            <Route exact path="/">
+              <Redirect to="/home" />
+            </Route>
+          </IonRouterOutlet>
+
+          <IonTabBar slot="bottom">
+            <IonTabButton tab="home" href="/home">
+              <IonIcon icon={homeOutline} />
+              <IonLabel>Inicio</IonLabel>
+            </IonTabButton>
+
+            <IonTabButton tab="reservar" href="/reservar">
+              <IonIcon icon={calendarOutline} />
+              <IonLabel>Reservar</IonLabel>
+            </IonTabButton>
+
+            <IonTabButton tab="qr" href="/qr">
+              <IonIcon icon={qrCodeOutline} />
+              <IonLabel>Mi QR</IonLabel>
+            </IonTabButton>
+
+            <IonTabButton tab="puntos" href="/puntos">
+              <IonIcon icon={starOutline} />
+              <IonLabel>Mis Puntos</IonLabel>
+            </IonTabButton>
+
+            <IonTabButton tab="recompensas" href="/recompensas">
+              <IonIcon icon={giftOutline} />
+              <IonLabel>Recompensas</IonLabel>
+            </IonTabButton>
+          </IonTabBar>
+        </IonTabs>
+      </IonReactRouter>
+
+      {receiptId && (
+        <ReceiptModal
+          url={receiptUrl(receiptId)}
+          onClose={() => {
+            setReceiptId(null);
+            const url = new URL(window.location.href);
+            url.searchParams.delete('receipt');
+            window.history.replaceState({}, '', url);
+          }}
+        />
+      )}
     </IonApp>
   );
 }
