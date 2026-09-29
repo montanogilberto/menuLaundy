@@ -56,7 +56,7 @@ export default function LoginPage({ reason, afterLogin = 'stay' }: Props) {
         <div className="flex flex-col items-center gap-3 text-center">
           <img src={logo} alt="GMO Lavandería" className="w-24 h-24 rounded-3xl object-contain bg-white shadow-xl" />
           <h1 className="text-white font-black text-2xl leading-tight uppercase tracking-wide">
-            Lavandería Y<br />Auto&#8209;Lavado
+            Lavandería Y<br />Auto&#8209;Servicio
           </h1>
           <p className="text-blue-200 text-base">
             Inicia sesión con tu número de celular{reason ? ` ${reason}` : ''}

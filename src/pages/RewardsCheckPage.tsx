@@ -150,7 +150,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             <WashingMachine className="w-5 h-5 text-[#0a2d6e]" />
           </div>
           <div className="leading-none">
-            <p className="text-white font-black text-xs sm:text-sm leading-tight">LAVANDERÍA Y<br/>AUTO-LAVADO</p>
+            <p className="text-white font-black text-xs sm:text-sm leading-tight">LAVANDERÍA Y<br/>AUTO-SERVICIO</p>
           </div>
         </div>
         {step === 'result' && client ? (
@@ -250,7 +250,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
           <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3 sm:gap-4">
 
             {/* Welcome hero */}
-            <div className="bg-gradient-to-r from-[#1565c0] to-[#0a2d6e] rounded-3xl p-4 sm:p-5 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 shadow-xl">
+            <div className="bg-gradient-to-r from-[#1565c0] to-[#0a2d6e] rounded-3xl p-4 sm:p-5 flex flex-wrap items-center gap-3 sm:gap-4 shadow-xl">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-400/30 rounded-full flex items-center justify-center shrink-0">
                 <User className="w-7 h-7 sm:w-9 sm:h-9 text-white" />
               </div>
@@ -271,7 +271,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
               {totalFree > 0 && (
                 <button
                   onClick={() => goTo('catalog')}
-                  className="w-full flex items-center justify-between gap-2 bg-green-500 hover:bg-green-400 rounded-2xl px-4 py-3 text-left shadow"
+                  className="basis-full flex items-center justify-between gap-2 bg-green-500 hover:bg-green-400 rounded-2xl px-4 py-3 text-left shadow"
                 >
                   <span className="flex items-center gap-2 text-white font-black text-lg">
                     <Gift className="w-6 h-6" /> {fmt(totalFree)} {totalFree === 1 ? 'servicio gratis' : 'servicios gratis'}

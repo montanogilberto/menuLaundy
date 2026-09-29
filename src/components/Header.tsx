@@ -20,7 +20,7 @@ export default function Header({ onRewardsClick }: Props) {
         <div className="flex-1 min-w-0">
 
           <h1 className="text-white font-black text-lg sm:text-xl md:text-3xl lg:text-4xl tracking-wide uppercase leading-none">
-            Lavandería Y<br className="sm:hidden" /> Auto&#8209;Lavado
+            Lavandería Y<br className="sm:hidden" /> Auto&#8209;Servicio
           </h1>
           <p className="text-blue-300 text-xs md:text-sm font-medium mt-0.5 hidden sm:block">
             Blvd. Musaro 1 B, Nuevo Hermosillo · +52 662 651 3670
