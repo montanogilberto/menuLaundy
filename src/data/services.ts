@@ -100,7 +100,7 @@ export const businessHours = [
 export const socialLinks = [
   { name: 'Facebook', url: 'https://facebook.com/gmolavanderia', icon: 'Facebook' },
   { name: 'Instagram', url: 'https://instagram.com/gmolavanderia', icon: 'Instagram' },
-  { name: 'WhatsApp', url: 'https://wa.me/525512345678', icon: 'MessageCircle' },
+  { name: 'WhatsApp', url: 'https://wa.me/526626513670', icon: 'MessageCircle' },
 ];
 
 export const sampleTicket: Ticket = {
