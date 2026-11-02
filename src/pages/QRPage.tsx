@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import ClientQrCode from '../components/ClientQrCode';
 import { Phone, Loader2, AlertCircle, LogOut } from 'lucide-react';
 import { findClientByPhone } from '../api/rewardsCheckApi';
 import { ClientInfo } from '../api/rewards';
@@ -60,8 +60,6 @@ export default function QRPage() {
     setClient(null);
     setError('');
   }
-
-  const qrValue = client ? `CLIENT:${client.clientId}:${client.first_name} ${client.last_name}` : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 flex flex-col items-center justify-center p-6">
@@ -129,13 +127,8 @@ export default function QRPage() {
           </div>
 
           <div className="bg-white rounded-3xl shadow-xl p-6 flex flex-col items-center gap-4">
-            <QRCodeSVG
-              value={qrValue}
-              size={240}
-              level="H"
-              includeMargin={false}
-            />
-            <p className="text-xs text-gray-400 font-mono break-all">{qrValue}</p>
+            <ClientQrCode clientId={client.clientId} size={240} level="H" />
+            <p className="text-xs text-gray-400">Cliente #{client.clientId}</p>
           </div>
 
           <button onClick={() => { clearClientSession(); reset(); }}

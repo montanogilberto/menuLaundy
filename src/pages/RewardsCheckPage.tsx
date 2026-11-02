@@ -1,69 +1,79 @@
 import { useState, useRef, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
+import ClientQrCode from '../components/ClientQrCode';
 import {
   ArrowLeft, Phone, Search, Loader, LogOut,
-  WashingMachine, Wind, Star, Gift, History,
+  WashingMachine, Wind, Star, Gift,
   Bell, User, ChevronRight,
-  Receipt, Maximize2, X,
+  Receipt, Maximize2, X, Wallet,
 } from 'lucide-react';
 import {
-  findClientByPhone, getBalance, getLedger, getCatalog, getProductCounts,
-  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry, ProductCount,
+  findClientByPhone, getBalance, getLedger, getCatalog, getProductCounts, getRedemptions, getLaundryBalance,
+  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry, ProductCount, Redemption, stampUnits,
 } from '../api/rewards';
 import { useClientSession, saveClientSession, clearClientSession } from '../lib/clientSession';
 
 interface Props { onBack: () => void; }
 type Step = 'input' | 'loading' | 'result' | 'not_found' | 'error';
-type Tab  = 'points' | 'history';
 
-const TX_LABELS: Record<string, string> = {
-  EARN: 'Puntos ganados', REDEEM: 'Canje', ADJUSTMENT: 'Ajuste', EXPIRE: 'Expiración',
+// Badge per ledger txType / redemption status (same labels as the POS client view)
+const TX_BADGE: Record<string, { label: string; cls: string }> = {
+  EARN:       { label: 'Ganados',   cls: 'bg-green-100 text-green-700' },
+  REDEEM:     { label: 'Canjeados', cls: 'bg-blue-100 text-blue-700' },
+  ADJUSTMENT: { label: 'Ajuste',    cls: 'bg-amber-100 text-amber-700' },
+  EXPIRE:     { label: 'Expirado',  cls: 'bg-slate-100 text-slate-500' },
+  applied:    { label: 'Canje aplicado', cls: 'bg-blue-100 text-blue-700' },
+  cancelled:  { label: 'Canje cancelado', cls: 'bg-slate-100 text-slate-500' },
 };
-function fmt(n: number) { return n.toLocaleString('es-MX'); }
-function fmtDate(s: string) {
-  return new Date(s).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+const LIST_PREVIEW = 5;
+
+interface ActivityItem {
+  id: string;
+  date: string;
+  points: number;
+  positive: boolean;
+  badge: string;
+  description: string;
+  isRedemption: boolean;
 }
 
-// tiers
-const TIERS = [
-  { label: 'Bronce', pts: 5  },
-  { label: 'Plata',  pts: 10 },
-  { label: 'Oro',    pts: 20 },
-];
-function nextTier(pts: number) {
-  return TIERS.find(t => pts < t.pts) ?? null;
+function fmt(n: number) { return n.toLocaleString('es-MX'); }
+function fmtMXN(n: number) { return n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }); }
+// The backend stores UTC without a zone suffix
+function asUtc(s: string) { return new Date(s.includes('Z') || s.includes('+') ? s : `${s}Z`); }
+function fmtDate(s: string) {
+  return asUtc(s).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
 }
-function tierProgress(pts: number) {
-  const prev = [...TIERS].reverse().find(t => pts >= t.pts);
-  const next = nextTier(pts);
-  if (!next) return 100;
-  const base = prev?.pts ?? 0;
-  return Math.round(((pts - base) / (next.pts - base)) * 100);
+function fmtDateTime(s: string) {
+  return `${fmtDate(s)} · ${asUtc(s).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 export default function RewardsCheckPage({ onBack }: Props) {
   const [phone, setPhone]     = useState('');
   const [step, setStep]       = useState<Step>('input');
-  const [tab, setTab]         = useState<Tab>('points');
   const [client, setClient]   = useState<ClientInfo | null>(null);
   const [balance, setBalance] = useState<RewardsBalance | null>(null);
   const [ledger, setLedger]   = useState<LedgerEntry[]>([]);
   const [catalog, setCatalog]         = useState<RewardsCatalogItem[]>([]);
   const [productCounts, setProductCounts] = useState<ProductCount[]>([]);
+  const [redemptions, setRedemptions]     = useState<Redemption[]>([]);
+  const [wallet, setWallet]               = useState<number | null>(null);
+  const [showAllPurchases, setShowAllPurchases] = useState(false);
+  const [showAllActivity, setShowAllActivity]   = useState(false);
   const [errMsg, setErrMsg]           = useState('');
   const [showQR, setShowQR]           = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const history  = useHistory();
   const session  = useClientSession();
   const { pathname } = useLocation();
-  const pointsRef  = useRef<HTMLDivElement>(null);
-  const catalogRef = useRef<HTMLDivElement>(null);
+  const pointsRef   = useRef<HTMLDivElement>(null);
+  const activityRef = useRef<HTMLDivElement>(null);
+  const catalogRef  = useRef<HTMLDivElement>(null);
 
-  // Dashboard shortcuts: jump to points / history / rewards catalog further down the page
+  // Dashboard shortcuts: jump to points / activity / rewards catalog further down the page
   const goTo = (target: 'points' | 'history' | 'catalog') => {
-    if (target !== 'catalog') setTab(target);
-    const el = target === 'catalog' ? (catalogRef.current ?? pointsRef.current) : pointsRef.current;
+    const el = target === 'catalog' ? (catalogRef.current ?? pointsRef.current)
+      : target === 'history' ? activityRef.current : pointsRef.current;
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -77,12 +87,16 @@ export default function RewardsCheckPage({ onBack }: Props) {
       ]);
       if (!found) { setStep('not_found'); return; }
       saveClientSession(found);
-      const [bal, led, counts] = await Promise.all([
+      // Each source fails on its own — one failing call must not blank the page
+      const [bal, led, counts, reds, wal] = await Promise.all([
         getBalance(found.clientId).catch(() => null),
         getLedger(found.clientId).catch(() => [] as LedgerEntry[]),
         getProductCounts(found.clientId).catch(() => [] as ProductCount[]),
+        getRedemptions(found.clientId).catch(() => [] as Redemption[]),
+        getLaundryBalance(found.clientId).catch(() => null),
       ]);
       setClient(found); setBalance(bal); setLedger(led); setCatalog(cat); setProductCounts(counts);
+      setRedemptions(reds); setWallet(wal);
       setStep('result');
     } catch (e: any) {
       setErrMsg(e?.message ?? 'Error de conexión'); setStep('error');
@@ -97,7 +111,8 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
   const clearView = () => {
     setPhone(''); setClient(null); setBalance(null); setLedger([]); setCatalog([]); setProductCounts([]);
-    setStep('input'); setTab('points');
+    setRedemptions([]); setWallet(null); setShowAllPurchases(false); setShowAllActivity(false);
+    setStep('input');
   };
 
   // Session started (here or on another tab) → open the dashboard; session ended → back to input
@@ -123,16 +138,48 @@ export default function RewardsCheckPage({ onBack }: Props) {
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  const pts      = balance?.balance ?? 0;
-  const progress = tierProgress(pts);
-  const next     = nextTier(pts);
-  const recent   = ledger.slice(0, 10);
+  const pts = balance?.balance ?? 0;
+  const byNewest = (a: { date: string }, b: { date: string }) => asUtc(b.date).getTime() - asUtc(a.date).getTime();
 
-  // Free services earned on 3+1 cards: every `requiredPoints` purchases of that product = 1 free
+  // Purchases = EARN rows tied to a ticket (same source as the POS client view)
+  const purchases = ledger
+    .filter(tx => tx.txType === 'EARN' && tx.referenceType === 'ticket' && tx.referenceId)
+    .map(tx => ({ incomeId: tx.referenceId as number, date: tx.created_At, points: tx.points }))
+    .sort(byNewest);
+
+  // Ledger rows + redemptions; REDEEM ledger rows are skipped because the redemption row shows them
+  const catalogName = new Map(catalog.map(i => [i.catalogItemId, i.name]));
+  const activity: ActivityItem[] = [
+    ...ledger.filter(tx => tx.txType !== 'REDEEM').map(tx => ({
+      id: `tx-${tx.transactionId}`,
+      date: tx.created_At,
+      points: tx.points,
+      positive: tx.txType !== 'EXPIRE' && tx.points >= 0,
+      badge: tx.txType,
+      description: tx.description || (tx.referenceType === 'ticket' ? `Ticket #${tx.referenceId}` : TX_BADGE[tx.txType]?.label ?? tx.txType),
+      isRedemption: false,
+    })),
+    ...redemptions.map(r => ({
+      id: `red-${r.redemptionId}`,
+      date: r.created_At,
+      points: r.pointsSpent,
+      positive: false,
+      badge: r.status,
+      description: catalogName.get(r.catalogItemId) ?? `Recompensa #${r.catalogItemId}`,
+      isRedemption: true,
+    })),
+  ].sort(byNewest);
+  const appliedRedemptions = redemptions.filter(r => r.status === 'applied').length;
+
+  const visiblePurchases = showAllPurchases ? purchases : purchases.slice(0, LIST_PREVIEW);
+  const visibleActivity  = showAllActivity ? activity : activity.slice(0, LIST_PREVIEW);
+
+  // Free services earned on 3+1 cards: every `requiredUnits` purchases of that product = 1 free
   const freeFor = (item: RewardsCatalogItem) => {
-    if (item.rewardType !== 'free_product' || item.freeProductId == null || !item.requiredPoints) return 0;
-    const units = productCounts.find(p => p.productId === item.freeProductId)?.unitsAvailable ?? 0;
-    return Math.floor(units / item.requiredPoints);
+    const units = stampUnits(item);
+    if (item.rewardType !== 'free_product' || item.freeProductId == null || !units) return 0;
+    const bought = productCounts.find(p => p.productId === item.freeProductId)?.unitsAvailable ?? 0;
+    return Math.floor(bought / units);
   };
   const totalFree = catalog.reduce((n, item) => n + freeFor(item), 0);
 
@@ -247,7 +294,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
         {/* ── DASHBOARD ── */}
         {step === 'result' && client && (
-          <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3 sm:gap-4">
+          <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3 sm:gap-4">
 
             {/* Welcome hero */}
             <div className="bg-gradient-to-r from-[#1565c0] to-[#0a2d6e] rounded-3xl p-4 sm:p-5 flex flex-wrap items-center gap-3 sm:gap-4 shadow-xl">
@@ -299,99 +346,63 @@ export default function RewardsCheckPage({ onBack }: Props) {
               ))}
             </div>
 
-            {/* Services status + promo banner */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              <div className="bg-white rounded-2xl p-4 shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[#0a2d6e] font-black text-base">Estado de tus servicios</h3>
-                  <button onClick={() => goTo('history')} className="text-blue-600 text-xs font-semibold flex items-center gap-0.5">
-                    Ver historial <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-                <div className="bg-blue-50 rounded-xl p-4 flex flex-col items-center gap-2 text-center">
-                  <WashingMachine className="w-10 h-10 text-blue-400" />
-                  <p className="text-blue-700 font-bold text-sm">No tienes servicios en proceso</p>
-                  <p className="text-blue-400 text-xs">¡Programa tu próximo lavado o secado!</p>
-                  <button onClick={() => history.push('/reservar')} className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1 mt-1">
-                    Nuevo servicio <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start">
+            <div className="flex flex-col gap-3 sm:gap-4 min-w-0">
 
-              {/* Promo */}
-              <div className="bg-gradient-to-br from-[#0a2d6e] to-[#1565c0] rounded-2xl p-5 shadow flex flex-col justify-between relative overflow-hidden">
-                <div className="text-3xl sm:text-4xl mb-2">🎁✨</div>
-                <div>
-                  <p className="text-white font-black text-xl leading-tight">Canjea tus puntos<br/>en grandes beneficios</p>
-                  <button onClick={() => goTo('catalog')} className="mt-3 bg-blue-500 hover:bg-blue-400 text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-1">
-                    Ver recompensas <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
+            {/* Laundry wallet: prepaid balance the washers charge */}
+            <div className="bg-white rounded-2xl p-4 shadow flex items-center gap-3">
+              <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center shrink-0">
+                <Wallet className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-slate-500 text-sm font-semibold">Saldo lavandería</p>
+                {wallet != null
+                  ? <p className="text-slate-900 font-black text-3xl leading-tight">{fmtMXN(wallet)}</p>
+                  : <p className="text-slate-400 text-sm">No se pudo cargar el saldo.</p>}
+                <p className="text-slate-400 text-xs mt-0.5">Recarga en caja. Se usa al escanear tu QR en la lavadora.</p>
               </div>
             </div>
 
-            {/* Points / History tabs */}
-            <div ref={pointsRef} className="bg-white rounded-2xl shadow overflow-hidden scroll-mt-20">
-              <div className="flex border-b border-slate-100">
-                {(['points', 'history'] as Tab[]).map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setTab(t)}
-                    className={`flex-1 py-3 font-bold text-sm transition-colors ${tab === t ? 'text-blue-700 border-b-2 border-blue-600' : 'text-slate-400'}`}
-                  >
-                    {t === 'points' ? 'Tus puntos' : 'Historial'}
-                  </button>
+            {/* QR — near the top, like the POS client view */}
+            <div className="bg-white rounded-2xl shadow p-4 flex flex-wrap sm:flex-nowrap items-center gap-4">
+              <button onClick={() => setShowQR(true)} className="shrink-0 mx-auto sm:mx-0 p-2 border border-slate-100 rounded-xl hover:opacity-80 transition-opacity">
+                <ClientQrCode clientId={client.clientId} size={150} fgColor="#0a2d6e" level="M" />
+              </button>
+              <div className="flex-1 min-w-0 basis-full sm:basis-auto text-center sm:text-left">
+                <p className="text-[#0a2d6e] font-black text-lg">Tu código QR</p>
+                <p className="text-slate-500 text-sm mt-1">Muéstralo en caja para acumular o canjear puntos, o escanéalo en la lavadora.</p>
+                <button
+                  onClick={() => setShowQR(true)}
+                  className="mt-3 w-full min-h-[44px] flex items-center justify-center gap-2 border-2 border-solid border-[#0a2d6e] text-[#0a2d6e] hover:bg-blue-50 font-black rounded-xl"
+                >
+                  <Maximize2 className="w-5 h-5" /> Mostrar grande
+                </button>
+              </div>
+            </div>
+
+            {/* Points summary */}
+            <div ref={pointsRef} className="bg-white rounded-2xl shadow p-4 scroll-mt-20">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[#0a2d6e] font-black text-lg">Mis puntos</h3>
+                <button onClick={() => goTo('catalog')} className="text-blue-600 text-sm font-bold flex items-center gap-1">
+                  <Gift className="w-4 h-4" /> Recompensas
+                </button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { label: 'Saldo de puntos',    value: fmt(pts), accent: true },
+                  { label: 'Puntos ganados',     value: fmt(balance?.lifetimeEarned ?? 0) },
+                  { label: 'Puntos canjeados',   value: fmt(balance?.lifetimeRedeemed ?? 0) },
+                  { label: 'Compras con puntos', value: fmt(purchases.length) },
+                  { label: 'Canjes',             value: fmt(appliedRedemptions) },
+                  { label: 'Última actividad',   value: balance?.lastActivity ? fmtDate(balance.lastActivity) : '—' },
+                ].map(k => (
+                  <div key={k.label} className={`rounded-xl p-3 min-w-0 ${k.accent ? 'bg-blue-50' : 'bg-slate-50'}`}>
+                    <p className={`font-black text-2xl leading-tight ${k.accent ? 'text-blue-600' : 'text-slate-800'}`}>{k.value}</p>
+                    <p className="text-slate-500 text-[11px] font-bold uppercase tracking-wide leading-tight mt-1">{k.label}</p>
+                  </div>
                 ))}
               </div>
-
-              {tab === 'points' && (
-                <div className="p-4 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
-                  <div className="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
-                    <Star className="w-6 h-6 text-white fill-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-slate-800 font-black text-2xl">{fmt(pts)}</p>
-                    <p className="text-slate-500 text-sm">Puntos acumulados</p>
-                    <div className="mt-2 bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <p className="text-slate-400 text-xs mt-1">
-                      {next ? `${progress}% para tu próxima recompensa (nivel ${next.label})` : '¡Nivel máximo alcanzado! 🥇'}
-                    </p>
-                  </div>
-                  <button onClick={() => goTo('catalog')} className="text-blue-600 text-xs font-bold text-center sm:text-right shrink-0 leading-tight w-full sm:w-auto border-t sm:border-0 border-slate-100 pt-3 sm:pt-0">
-                    Ver catálogo<br className="hidden sm:block"/> de recompensas <ChevronRight className="w-3 h-3 inline" />
-                  </button>
-                </div>
-              )}
-
-              {tab === 'history' && (
-                <div className="divide-y divide-slate-50">
-                  {recent.length === 0 && (
-                    <p className="text-slate-400 text-sm text-center py-6">Sin actividad todavía.</p>
-                  )}
-                  {recent.map(item => {
-                    const positive = item.txType === 'EARN';
-                    return (
-                      <div key={item.transactionId} className="flex items-center gap-3 px-4 py-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${positive ? 'bg-green-100' : 'bg-red-100'}`}>
-                          <Receipt className={`w-4 h-4 ${positive ? 'text-green-600' : 'text-red-500'}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-slate-800 text-sm font-semibold truncate">{item.description || TX_LABELS[item.txType] || item.txType}</p>
-                          <p className="text-slate-400 text-xs">{fmtDate(item.created_At)}</p>
-                        </div>
-                        <span className={`font-black text-base shrink-0 ${positive ? 'text-green-600' : 'text-red-500'}`}>
-                          {positive ? '+' : '-'}{fmt(item.points)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
             {/* Catalog */}
@@ -402,19 +413,20 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 </div>
                 <div className="divide-y divide-slate-50">
                   {catalog.map(item => {
-                    const isStamps    = item.rewardType === 'free_product' && item.freeProductId != null && item.requiredPoints <= 10;
+                    const isStamps    = item.rewardType === 'free_product' && item.freeProductId != null;
                     const isDiscount  = item.rewardType === 'discount_fixed';
+                    const isPct       = item.rewardType === 'discount_pct';
                     // For stamp cards: use per-product purchase count; for discount/points: use global balance
                     const productRow  = isStamps ? productCounts.find(p => p.productId === item.freeProductId) : undefined;
                     const current     = isStamps
                       ? (productRow?.unitsAvailable ?? 0)
                       : (balance?.balance ?? 0);
-                    const required    = item.requiredPoints;
+                    const required    = isStamps ? stampUnits(item) : item.requiredPoints;
                     const canRedeem   = current >= required;
-                    const pct         = Math.min(100, Math.round((current / required) * 100));
+                    const pct         = required > 0 ? Math.min(100, Math.round((current / required) * 100)) : 0;
                     const missing     = Math.max(0, required - current);
                     const name        = item.name.replace(/\s*\(3x1\)\s*$/i, '');
-                    const icon        = isDiscount ? '💰' : '🎁';
+                    const icon        = isDiscount || isPct ? '💰' : '🎁';
                     return (
                       <div key={item.catalogItemId ?? item.name} className="flex items-start gap-3 px-4 py-4">
                         <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5 text-2xl ${canRedeem ? 'bg-green-100' : 'bg-slate-100'}`}>
@@ -435,6 +447,9 @@ export default function RewardsCheckPage({ onBack }: Props) {
                           </div>
                           {isDiscount && item.discountValue && (
                             <p className="text-emerald-600 font-black text-2xl mt-0.5">${fmt(item.discountValue)} de descuento</p>
+                          )}
+                          {isPct && item.discountValue && (
+                            <p className="text-emerald-600 font-black text-2xl mt-0.5">{fmt(item.discountValue)}% de descuento</p>
                           )}
                           {item.description && <p className="text-slate-500 text-sm mt-1">{item.description}</p>}
                           {isStamps ? (
@@ -500,29 +515,6 @@ export default function RewardsCheckPage({ onBack }: Props) {
               </div>
             )}
 
-            {/* QR */}
-            <div className="bg-white rounded-2xl shadow p-5 flex flex-col items-center gap-3">
-              <div className="flex items-center justify-between w-full">
-                <p className="text-[#0a2d6e] font-black text-base">Tu código QR</p>
-                <button
-                  onClick={() => setShowQR(true)}
-                  className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-semibold border border-blue-200 rounded-lg px-2.5 py-1"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" /> Mostrar grande
-                </button>
-              </div>
-              <button onClick={() => setShowQR(true)} className="hover:opacity-80 transition-opacity">
-                <QRCodeSVG
-                  value={`CLIENT:${client.clientId}:${client.first_name} ${client.last_name}`}
-                  size={160}
-                  bgColor="#ffffff"
-                  fgColor="#0a2d6e"
-                  level="M"
-                />
-              </button>
-              <p className="text-slate-400 text-xs text-center">Toca el QR o "Mostrar grande" para escanearlo en caja.</p>
-            </div>
-
             {/* Fullscreen QR modal */}
             {showQR && (
               <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center gap-4 sm:gap-6 px-6 py-[max(4rem,env(safe-area-inset-top))] overflow-y-auto">
@@ -537,10 +529,9 @@ export default function RewardsCheckPage({ onBack }: Props) {
                   <p className="text-slate-400 text-sm">Cliente #{client.clientId}</p>
                 </div>
                 <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-[#0a2d6e]">
-                  <QRCodeSVG
-                    value={`CLIENT:${client.clientId}:${client.first_name} ${client.last_name}`}
+                  <ClientQrCode
+                    clientId={client.clientId}
                     size={Math.min(window.innerWidth - 96, window.innerHeight - 320, 320)}
-                    bgColor="#ffffff"
                     fgColor="#0a2d6e"
                     level="H"
                   />
@@ -557,28 +548,72 @@ export default function RewardsCheckPage({ onBack }: Props) {
               </div>
             )}
 
-            {/* Quick links */}
-            <div className="bg-white rounded-2xl shadow overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100">
-                <h3 className="text-[#0a2d6e] font-black text-base">Accesos rápidos</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 p-3">
-                {[
-                  { icon: '💵', bg: 'bg-green-500',  label: 'Prestamista',      sub: 'Conecta, financia, haz crecer.' },
-                  { icon: '👤', bg: 'bg-blue-500',   label: 'Solicita tu Préstamo',  sub: 'Tu proyecto, nuestra prioridad.' },
-                  { icon: '🎮', bg: 'bg-purple-500', label: 'Arcade (Casino)',   sub: 'Juega, gana, disfruta.' },
-                  { icon: '🤖', bg: 'bg-slate-600',  label: 'Factory Software',  sub: 'Tu idea, nuestro código.' },
-                ].map(({ icon, bg, label, sub }) => (
-                  <div key={label} className="flex items-center gap-3 bg-slate-50 rounded-xl p-3 cursor-pointer hover:bg-slate-100 transition-colors">
-                    <div className={`${bg} w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0`}>{icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-slate-800 font-bold text-sm leading-tight">{label}</p>
-                      <p className="text-slate-400 text-xs leading-tight">{sub}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+            </div>
+
+            {/* Right column: purchases + points activity */}
+            <div className="flex flex-col gap-3 sm:gap-4 min-w-0">
+              <div className="bg-white rounded-2xl shadow overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100">
+                  <h3 className="text-[#0a2d6e] font-black text-lg">Compras ({purchases.length})</h3>
+                </div>
+                {purchases.length === 0 ? (
+                  <p className="text-slate-400 text-sm text-center py-6">Sin compras registradas con puntos.</p>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {visiblePurchases.map(p => (
+                      <div key={`${p.incomeId}-${p.date}`} className="flex items-center gap-3 px-4 py-3">
+                        <Receipt className="w-6 h-6 text-blue-500 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-slate-800 font-semibold">Ticket #{p.incomeId}</p>
+                          <p className="text-slate-400 text-sm">{fmtDateTime(p.date)}</p>
+                        </div>
+                        <span className="text-green-600 font-black shrink-0">+{fmt(p.points)} pts</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+                {purchases.length > LIST_PREVIEW && (
+                  <button onClick={() => setShowAllPurchases(v => !v)} className="w-full py-3 border-t border-slate-100 text-blue-600 text-sm font-bold">
+                    {showAllPurchases ? 'Ver menos' : `Ver todas (${purchases.length})`}
+                  </button>
+                )}
               </div>
+
+              <div ref={activityRef} className="bg-white rounded-2xl shadow overflow-hidden scroll-mt-20">
+                <div className="px-4 py-3 border-b border-slate-100">
+                  <h3 className="text-[#0a2d6e] font-black text-lg">Actividad de puntos</h3>
+                </div>
+                {activity.length === 0 ? (
+                  <p className="text-slate-400 text-sm text-center py-6">Sin movimientos de puntos.</p>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {visibleActivity.map(item => {
+                      const badge = TX_BADGE[item.badge];
+                      return (
+                        <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                          {item.isRedemption
+                            ? <Gift className="w-6 h-6 text-blue-500 shrink-0" />
+                            : <Receipt className="w-6 h-6 text-blue-500 shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-slate-800 font-semibold break-words">{item.description}</p>
+                            <p className="text-slate-400 text-sm">{fmtDateTime(item.date)}</p>
+                            {badge && <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-md ${badge.cls}`}>{badge.label}</span>}
+                          </div>
+                          <span className={`font-black shrink-0 ${item.positive ? 'text-green-600' : 'text-red-500'}`}>
+                            {item.positive ? '+' : '-'}{fmt(Math.abs(item.points))}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {activity.length > LIST_PREVIEW && (
+                  <button onClick={() => setShowAllActivity(v => !v)} className="w-full py-3 border-t border-slate-100 text-blue-600 text-sm font-bold">
+                    {showAllActivity ? 'Ver menos' : `Ver todo (${activity.length})`}
+                  </button>
+                )}
+              </div>
+            </div>
             </div>
 
             {/* Promo footer banner */}

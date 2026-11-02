@@ -33,10 +33,24 @@ export interface LedgerEntry {
   points: number;
   balanceAfter: number;
   description?: string;
+  referenceType?: string | null;
+  referenceId?: number | null;
   created_At: string;
 }
 
-export type RewardType = 'free_product' | 'discount_fixed' | string;
+export interface Redemption {
+  redemptionId: number;
+  catalogItemId: number;
+  pointsSpent: number;
+  status: 'applied' | 'cancelled' | string;
+  incomeId?: number | null;
+  created_At: string;
+}
+
+// posRewardCatalogItems holds every discount. The catalog read leaves out
+// coupons (coupon_b2g1, typed at the register), so the kiosk sees stamp cards
+// (free_product) and points rewards (discount_fixed / discount_pct).
+export type RewardType = 'free_product' | 'discount_fixed' | 'discount_pct' | 'coupon_b2g1' | string;
 
 export type RewardsCatalogItem = CatalogItem; // backwards compat alias
 
@@ -46,11 +60,18 @@ export interface CatalogItem {
   name: string;
   rewardType: RewardType;
   requiredPoints: number;
+  /** free_product: purchases of freeProductId per free unit */
+  requiredUnits?: number | null;
   freeProductId?: number;
   discountValue?: number;
   description?: string;
   isActive?: boolean;
 }
+
+/** Purchases a stamp card needs. Rows saved before requiredUnits existed kept
+ *  the unit count in requiredPoints. */
+export const stampUnits = (item: CatalogItem): number =>
+  Number(item.requiredUnits ?? item.requiredPoints) || 0;
 
 export interface Company {
   companyId: number;
@@ -90,6 +111,19 @@ export async function getLedger(clientId: number): Promise<LedgerEntry[]> {
     posRewardTransactions: [{ action: 0, companyId: COMPANY_ID, clientId }],
   });
   return data?.result?.[0]?.posRewardTransactions ?? [];
+}
+
+export async function getRedemptions(clientId: number): Promise<Redemption[]> {
+  const data: any = await post('/posRewardRedemptions', {
+    posRewardRedemptions: [{ action: 0, companyId: COMPANY_ID, clientId }],
+  });
+  return data?.result?.[0]?.posRewardRedemptions ?? [];
+}
+
+/** Prepaid laundry balance (walletTransactions) — what the washers charge. */
+export async function getLaundryBalance(clientId: number): Promise<number> {
+  const data: any = await post('/ledger/balance', { companyId: COMPANY_ID, clientId });
+  return Number(data?.availableBalance ?? 0);
 }
 
 export async function getCatalog(): Promise<CatalogItem[]> {
