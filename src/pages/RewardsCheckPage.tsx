@@ -38,6 +38,9 @@ interface ActivityItem {
 }
 
 function fmt(n: number) { return n.toLocaleString('es-MX'); }
+// Catalog names were typed with a deal suffix ("(3x1)", "(4x3)") that no longer matches the rule —
+// drop it; stamp cards get their rule text from requiredUnits instead
+function rewardName(item: RewardsCatalogItem) { return item.name.replace(/\s*\(\d+\s*x\s*\d+\)\s*$/i, ''); }
 function fmtMXN(n: number) { return n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }); }
 // The backend stores UTC without a zone suffix
 function asUtc(s: string) { return new Date(s.includes('Z') || s.includes('+') ? s : `${s}Z`); }
@@ -148,7 +151,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
     .sort(byNewest);
 
   // Ledger rows + redemptions; REDEEM ledger rows are skipped because the redemption row shows them
-  const catalogName = new Map(catalog.map(i => [i.catalogItemId, i.name]));
+  const catalogName = new Map(catalog.map(i => [i.catalogItemId, rewardName(i)]));
   const activity: ActivityItem[] = [
     ...ledger.filter(tx => tx.txType !== 'REDEEM').map(tx => ({
       id: `tx-${tx.transactionId}`,
@@ -425,7 +428,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                     const canRedeem   = current >= required;
                     const pct         = required > 0 ? Math.min(100, Math.round((current / required) * 100)) : 0;
                     const missing     = Math.max(0, required - current);
-                    const name        = item.name.replace(/\s*\(3x1\)\s*$/i, '');
+                    const name        = rewardName(item);
                     const icon        = isDiscount || isPct ? '💰' : '🎁';
                     return (
                       <div key={item.catalogItemId ?? item.name} className="flex items-start gap-3 px-4 py-4">
@@ -451,7 +454,9 @@ export default function RewardsCheckPage({ onBack }: Props) {
                           {isPct && item.discountValue && (
                             <p className="text-emerald-600 font-black text-2xl mt-0.5">{fmt(item.discountValue)}% de descuento</p>
                           )}
-                          {item.description && <p className="text-slate-500 text-sm mt-1">{item.description}</p>}
+                          {isStamps
+                            ? <p className="text-slate-500 text-sm mt-1">Compra {required} y llévate 1 más gratis</p>
+                            : item.description && <p className="text-slate-500 text-sm mt-1">{item.description}</p>}
                           {isStamps ? (
                             /* Stamps: N paid + 1 free */
                             <div className="mt-3 flex items-center gap-2">
