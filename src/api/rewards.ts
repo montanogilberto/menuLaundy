@@ -86,17 +86,28 @@ export async function getCompanies(): Promise<Company[]> {
   return data?.result?.[0]?.companies ?? data?.companies ?? [];
 }
 
-export async function findClientByPhone(cellphone: string): Promise<ClientInfo | null> {
-  const data: any = await get('/all_clients');
-  let clients: ClientInfo[] = data?.result?.[0]?.clients ?? data?.clients ?? [];
+/** /check_contact matches the stored value exactly, and stored phones come in these forms. */
+function phoneForms(cellphone: string): string[] {
   const digits = cellphone.replace(/\D/g, '');
-  return (
-    clients.find(c => {
-      const stored = (c.cellphone ?? '').replace(/\D/g, '').replace(/^52/, '');
-      const input  = digits.replace(/^52/, '');
-      return stored === input || stored.endsWith(input) || input.endsWith(stored);
-    }) ?? null
+  const local = digits.slice(-10);
+  return [...new Set([digits, `+${digits}`, local, `+52${local}`, `52${local}`])];
+}
+
+export async function findClientByPhone(cellphone: string): Promise<ClientInfo | null> {
+  const matches: any[] = await Promise.all(
+    phoneForms(cellphone).map(contact => post('/check_contact', { contact })),
   );
+  // A contact can belong to a login with no client record: found, but no clientId.
+  const client = matches.find(m => m?.found && m.clientId);
+  if (!client) return null;
+  return {
+    clientId: client.clientId,
+    companyId: client.companyId,
+    first_name: client.firstName,
+    last_name: client.lastName,
+    cellphone: client.cellphone,
+    email: client.email,
+  };
 }
 
 export async function getBalance(clientId: number): Promise<RewardsBalance | null> {
