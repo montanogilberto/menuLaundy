@@ -9,7 +9,7 @@ export default function ReceiptModal({ url, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm">
       {/* Top bar */}
-      <div className="flex items-center justify-between bg-[#0a2d6e] px-5 py-3 shrink-0">
+      <div className="flex items-center justify-between bg-[#1E3A8A] px-5 py-3 shrink-0">
         <p className="text-white font-black text-lg">🧾 Tu Recibo</p>
         <div className="flex items-center gap-3">
           <a

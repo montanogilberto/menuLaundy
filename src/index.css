@@ -1,12 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Same brand as the POS (POSVending src/theme/variables.css and Login.css). */
+:root {
+  --ion-font-family: 'Inter', sans-serif;
+  --ion-color-primary: #2563EB;
+  --ion-color-primary-rgb: 37, 99, 235;
+}
+
 @layer base {
   body {
-    font-family: 'Rajdhani', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     overflow: hidden;
   }
 
@@ -22,6 +29,10 @@
 }
 
 @layer utilities {
+  .gmo-brand-bg {
+    background: linear-gradient(160deg, #1E3A8A 0%, #2563EB 50%, #3B82F6 100%);
+  }
+
   .ticker {
     position: relative;
     width: 100%;

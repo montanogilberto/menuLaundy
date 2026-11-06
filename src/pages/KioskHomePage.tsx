@@ -131,7 +131,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
       <button
         onClick={() => history.push('/puntos')}
         className="w-full relative overflow-hidden rounded-2xl shadow-xl active:scale-[0.98] transition-transform cursor-pointer"
-        style={{ background: 'linear-gradient(135deg, #1a3fa8 0%, #0a2d6e 60%, #1a3fa8 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #2563EB 0%, #1E3A8A 60%, #2563EB 100%)' }}
       >
         {/* Background decoration circles */}
         <div className="absolute right-0 top-0 w-48 h-48 rounded-full opacity-10 bg-white translate-x-16 -translate-y-16" />
@@ -215,7 +215,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
               <button
                 onClick={startFlow}
                 disabled={!receiptId.trim()}
-                className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all sm:hover:scale-105 active:scale-95 shrink-0"
+                className="flex items-center gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all sm:hover:scale-105 active:scale-95 shrink-0"
               >
                 {session ? 'Ver recibo' : 'Siguiente'}
               </button>
@@ -233,7 +233,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
                     <button
                       key={c.label}
                       onClick={() => setCountry(c.label)}
-                      className={`flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-2.5 text-sm font-bold transition-colors ${country === c.label ? 'bg-[#0a2d6e] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                      className={`flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-2.5 text-sm font-bold transition-colors ${country === c.label ? 'bg-[#2563EB] text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
                     >
                       <span>{c.flag}</span>
                       <span>{c.label === 'MX' ? c.code : c.label}</span>
@@ -258,7 +258,7 @@ export default function KioskHomePage({ onViewReceipt }: Props) {
                   />
                 </div>
                 <button onClick={verifyAndOpen} disabled={!phone.trim()}
-                  className="flex items-center gap-1.5 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all sm:hover:scale-105 active:scale-95 shrink-0">
+                  className="flex items-center gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition-all sm:hover:scale-105 active:scale-95 shrink-0">
                   <Search className="w-4 h-4" /> Ver
                 </button>
                 </div>
