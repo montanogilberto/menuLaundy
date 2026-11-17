@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { Loader2, X } from 'lucide-react';
-import { confirmTopUp, createTopUpIntent, type TopUpIntent } from '../api/walletTopUp';
+import { answerSaveCard, confirmTopUp, createTopUpIntent, type TopUpIntent } from '../api/walletTopUp';
 
 export const STRIPE_PK = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '';
 
@@ -10,10 +10,9 @@ const QUICK_AMOUNTS = [100, 200, 500];
 const MIN_MXN = 20;
 const money = (n: number) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 // Vista previa: 3.6% + $3 + IVA. El backend acredita el neto real de Stripe.
-const stripeFee = (n: number) => (n > 0 ? Math.round((n * 0.036 + 3) * 1.16 * 100) / 100 : 0);
 
 const stripes = new Map<string, Promise<Stripe | null>>();
-export const getStripe = (account?: string) => {
+const getStripe = (account?: string) => {
   const key = account ?? '';
   if (!stripes.has(key)) stripes.set(key, loadStripe(STRIPE_PK, account ? { stripeAccount: account } : undefined));
   return stripes.get(key)!;
@@ -74,10 +73,11 @@ export default function TopUpSheet({ clientId, onClose, onDone }: Props) {
   const [error, setError] = useState('');
   // Closing now would unmount the Payment Element in the middle of the charge.
   const [charging, setCharging] = useState(false);
+  // Set once paid when the client can keep the card: the sheet then asks.
+  const [paid, setPaid] = useState<{ id: string; message: string } | null>(null);
+  const [answering, setAnswering] = useState(false);
 
   const amount = Number(input) || 0;
-  const fee = stripeFee(amount);
-  const net = Math.max(0, amount - fee);
 
   const start = async () => {
     if (amount < MIN_MXN || starting) return;
@@ -93,12 +93,22 @@ export default function TopUpSheet({ clientId, onClose, onDone }: Props) {
   };
 
   const onPaid = async (paymentIntentId: string) => {
+    let message = 'Pago recibido. Tu saldo se actualizará en unos momentos.';
     try {
       const r = await confirmTopUp(paymentIntentId, intent?.stripeAccount);
-      onDone(`Recarga exitosa: se abonaron ${money(r.netCreditedMXN ?? net)}.`);
+      message = `Recarga exitosa: se abonaron ${money(r.netCreditedMXN ?? amount)}.`;
     } catch {
-      onDone('Pago recibido. Tu saldo se actualizará en unos momentos.');
+      // The charge already succeeded; the Stripe webhook credits the balance.
     }
+    if (intent?.canSaveCard) setPaid({ id: paymentIntentId, message });
+    else onDone(message);
+  };
+
+  const answer = async (save: boolean) => {
+    if (!paid || answering) return;
+    setAnswering(true);
+    await answerSaveCard(paid.id, intent?.stripeAccount, save).catch(() => {});
+    onDone(paid.message);
   };
 
   return (
@@ -106,9 +116,20 @@ export default function TopUpSheet({ clientId, onClose, onDone }: Props) {
       <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <p className="text-slate-900 font-black text-lg">Recargar saldo</p>
-          <button onClick={onClose} disabled={charging} aria-label="Cerrar" className="p-1 disabled:opacity-40"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} disabled={charging || !!paid} aria-label="Cerrar" className="p-1 disabled:opacity-40"><X className="w-5 h-5" /></button>
         </div>
-        {intent ? (
+        {paid ? (
+          <>
+            <p className="text-slate-700">{paid.message}</p>
+            <p className="text-slate-900 font-bold">¿Guardar esta tarjeta para tus próximas recargas?</p>
+            <button onClick={() => answer(true)} disabled={answering}
+              className="w-full bg-green-500 disabled:opacity-60 text-white font-bold rounded-xl py-3 flex justify-center">
+              {answering ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sí, guardar'}
+            </button>
+            <button onClick={() => answer(false)} disabled={answering}
+              className="w-full border border-slate-200 rounded-xl py-3 font-semibold">No, gracias</button>
+          </>
+        ) : intent ? (
           <Elements stripe={getStripe(intent.stripeAccount)} options={{ clientSecret: intent.clientSecret, locale: 'es' }}>
             <PayForm amount={amount} onPaid={onPaid} onCharging={setCharging} />
           </Elements>
@@ -124,7 +145,7 @@ export default function TopUpSheet({ clientId, onClose, onDone }: Props) {
               onChange={(e) => setInput(e.target.value)} className="border border-slate-200 rounded-xl p-3 text-base" />
             {amount >= MIN_MXN ? (
               <p className="text-slate-500 text-sm">
-                Pagas {money(amount)} · Comisión Stripe {money(fee)} · Se abonan <strong>{money(net)}</strong>
+                Pagas {money(amount)} y se abonan <strong>{money(amount)}</strong> a tu saldo.
               </p>
             ) : (
               <p className="text-slate-400 text-sm">Monto mínimo: {money(MIN_MXN)}</p>

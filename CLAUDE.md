@@ -47,9 +47,12 @@ in-store screen. Vite + React 18 + Ionic React 8 (tabs) + Tailwind, React Router
 - Client QR is the signed `GMO1.<companyId>.<clientId>.<firma>` from `POST /laundryDevices/clientQr`
   (`useClientQr` / `ClientQrCode`). Never build it in the app — the HMAC secret is backend-only and
   the washers reject anything else. The POS scanner still accepts legacy `CLIENT:<id>:<name>`.
-- Points balance (`posRewardBalances`) and 3+1 rewards are separate: 3+1 "buy 3, the 4th
-  free" cards use per-product `posRewardProductCounts.unitsAvailable` matched by
-  `freeProductId`; free services = `floor(unitsAvailable / requiredPoints)`.
+- Points balance (`posRewardBalances`) and stamp rewards are separate. Stamp cards fill
+  **per cycle** (4 Servicio Completo Básico = 1 free Básico, apart from Medio / Carga Alta):
+  `posRewardProductCounts` returns one row per card + cycle (`catalogItemId`,
+  `productOptionChoiceId`, `choiceName`, `requiredUnits`). Use `stampCycles()` in
+  `src/api/rewards.ts` (mirrors POSVending `src/utils/stampCycles.ts`); free per cycle =
+  `floor(unitsAvailable / requiredUnits)`.
 - Redemption happens in POSVendingV2 (cashier scans the QR); this app only shows status.
 - Client **#1 "Desconocido -1"** is the POS walk-in default and has phone 6624737005, so it
   carries everyone's anonymous sales — fine as test data, not a real customer.

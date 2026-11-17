@@ -9,14 +9,45 @@ import {
 } from 'lucide-react';
 import {
   findClientByPhone, getBalance, getLedger, getCatalog, getProductCounts, getRedemptions, getLaundryBalance,
-  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry, ProductCount, Redemption, stampUnits,
+  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry, ProductCount, Redemption, StampCycle, stampUnits, stampCycles,
 } from '../api/rewards';
 import { useClientSession, saveClientSession, clearClientSession } from '../lib/clientSession';
-import { getCompanyName, isCardTopUpAvailable } from '../api/walletTopUp';
+import { getCompanyName, getTopUpOptions, type TransferAccount } from '../api/walletTopUp';
 import TopUpSheet, { STRIPE_PK } from '../components/TopUpSheet';
-import RegisterCardSheet from '../components/RegisterCardSheet';
 
 interface Props { onBack: () => void; }
+
+/** One stamp row (a cycle, or the whole card): N stamps → GRATIS, plus free units earned. */
+function StampRow({ cycle }: { cycle: StampCycle }) {
+  const ready = cycle.free > 0;
+  // Past a full card, show this card's progress toward the next free unit.
+  const filled = ready ? cycle.requiredUnits : cycle.unitsAvailable;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {cycle.label && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-slate-700 font-bold text-sm">{cycle.label}</p>
+          <span className={`text-xs font-black shrink-0 ${ready ? 'text-green-600' : 'text-slate-500'}`}>
+            {ready ? `${cycle.free} gratis` : `${cycle.unitsAvailable} / ${cycle.requiredUnits}`}
+          </span>
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {Array.from({ length: cycle.requiredUnits }, (_, i) => (
+          <div key={i} className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm border-2 ${i < filled ? 'bg-[#1E3A8A] border-[#1E3A8A] text-white' : 'bg-white border-dashed border-slate-300 text-slate-300'}`}>
+            {i < filled ? <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" /> : i + 1}
+          </div>
+        ))}
+        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+        <div className={`w-10 h-10 rounded-full flex flex-col items-center justify-center border-2 ${ready ? 'bg-green-500 border-green-500 text-white' : 'bg-amber-50 border-amber-300 text-amber-500'}`}>
+          <Gift className="w-4 h-4" />
+          <span className="text-[8px] font-black leading-none mt-0.5">GRATIS</span>
+        </div>
+        {!cycle.label && ready && <span className="text-green-600 text-xs font-black ml-1">{cycle.free} gratis</span>}
+      </div>
+    </div>
+  );
+}
 type Step = 'input' | 'loading' | 'result' | 'not_found' | 'error';
 
 // Badge per ledger txType / redemption status (same labels as the POS client view)
@@ -67,7 +98,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
   const [companyName, setCompanyName]     = useState('');
   const [canTopUp, setCanTopUp]           = useState(false);
   const [showTopUp, setShowTopUp]         = useState(false);
-  const [showRegisterCard, setShowRegisterCard] = useState(false);
+  const [transferAccount, setTransferAccount] = useState<TransferAccount | null>(null);
   const [topUpNote, setTopUpNote]         = useState('');
   const [showAllPurchases, setShowAllPurchases] = useState(false);
   const [showAllActivity, setShowAllActivity]   = useState(false);
@@ -109,7 +140,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
       setClient(found); setBalance(bal); setLedger(led); setCatalog(cat); setProductCounts(counts);
       setRedemptions(reds); setWallet(wal);
       getCompanyName().then(setCompanyName).catch(() => {});
-      isCardTopUpAvailable().then((ok) => setCanTopUp(ok && !!STRIPE_PK)).catch(() => {});
+      getTopUpOptions().then((o) => { setCanTopUp(o.card && !!STRIPE_PK); setTransferAccount(o.transferAccount); }).catch(() => {});
       setStep('result');
     } catch (e: any) {
       setErrMsg(e?.message ?? 'Error de conexión'); setStep('error');
@@ -187,12 +218,10 @@ export default function RewardsCheckPage({ onBack }: Props) {
   const visiblePurchases = showAllPurchases ? purchases : purchases.slice(0, LIST_PREVIEW);
   const visibleActivity  = showAllActivity ? activity : activity.slice(0, LIST_PREVIEW);
 
-  // Free services earned on 3+1 cards: every `requiredUnits` purchases of that product = 1 free
+  // Free services earned on stamp cards, counted per cycle: 4 Básico = 1 free Básico.
   const freeFor = (item: RewardsCatalogItem) => {
-    const units = stampUnits(item);
-    if (item.rewardType !== 'free_product' || item.freeProductId == null || !units) return 0;
-    const bought = productCounts.find(p => p.productId === item.freeProductId)?.unitsAvailable ?? 0;
-    return Math.floor(bought / units);
+    if (item.rewardType !== 'free_product' || item.freeProductId == null || !stampUnits(item)) return 0;
+    return stampCycles(item, productCounts).reduce((n, c) => n + c.free, 0);
   };
   const totalFree = catalog.reduce((n, item) => n + freeFor(item), 0);
 
@@ -375,19 +404,23 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 <p className="text-slate-400 text-xs mt-0.5">Recarga en caja{canTopUp ? ' o con tarjeta' : ''}. Se usa al escanear tu QR en la máquina.</p>
                 {topUpNote && <p className="text-green-700 text-xs font-semibold mt-1">{topUpNote}</p>}
               </div>
-              <div className="shrink-0 flex flex-col gap-2">
-                {canTopUp && (
-                  <button onClick={() => setShowTopUp(true)} className="bg-green-500 text-white font-bold rounded-xl px-3 py-2 text-sm">
-                    Recargar
-                  </button>
-                )}
-                {STRIPE_PK && (
-                  <button onClick={() => setShowRegisterCard(true)} className="border border-slate-200 text-slate-700 font-semibold rounded-xl px-3 py-2 text-sm">
-                    Registrar tarjeta
-                  </button>
-                )}
-              </div>
+              {canTopUp && (
+                <button onClick={() => setShowTopUp(true)} className="shrink-0 bg-green-500 text-white font-bold rounded-xl px-3 py-2 text-sm">
+                  Recargar
+                </button>
+              )}
             </div>
+
+            {transferAccount && (
+              <div className="bg-white rounded-2xl p-4 shadow">
+                <p className="text-slate-900 font-bold">Recarga por transferencia</p>
+                <p className="text-slate-500 text-sm mt-1">Titular: <span className="text-slate-900">{transferAccount.holderName}</span></p>
+                <p className="text-slate-500 text-sm">CLABE: <span className="text-slate-900 break-all">{transferAccount.clabe}</span></p>
+                {transferAccount.bankName && <p className="text-slate-500 text-sm">Banco: <span className="text-slate-900">{transferAccount.bankName}</span></p>}
+                {transferAccount.terminalName && <p className="text-slate-500 text-sm">Terminal: <span className="text-slate-900">{transferAccount.terminalName}</span></p>}
+                <p className="text-slate-400 text-xs mt-1">Después manda tu comprobante por WhatsApp o muéstralo en caja.</p>
+              </div>
+            )}
 
             {/* QR — near the top, like the POS client view */}
             <div className="bg-white rounded-2xl shadow p-4 flex flex-wrap sm:flex-nowrap items-center gap-4">
@@ -442,15 +475,21 @@ export default function RewardsCheckPage({ onBack }: Props) {
                     const isStamps    = item.rewardType === 'free_product' && item.freeProductId != null;
                     const isDiscount  = item.rewardType === 'discount_fixed';
                     const isPct       = item.rewardType === 'discount_pct';
-                    // For stamp cards: use per-product purchase count; for discount/points: use global balance
-                    const productRow  = isStamps ? productCounts.find(p => p.productId === item.freeProductId) : undefined;
-                    const current     = isStamps
-                      ? (productRow?.unitsAvailable ?? 0)
-                      : (balance?.balance ?? 0);
+                    // Stamp cards count per cycle; discount/points use the points balance.
+                    // An empty "no cycle" row is noise for the customer when the card has cycles.
+                    const cycles      = isStamps
+                      ? stampCycles(item, productCounts).filter((c, _, all) => c.label !== 'Sin ciclo registrado' || c.unitsAvailable > 0 || all.length === 1)
+                      : [];
+                    const current     = isStamps ? 0 : (balance?.balance ?? 0);
                     const required    = isStamps ? stampUnits(item) : item.requiredPoints;
-                    const canRedeem   = current >= required;
+                    const canRedeem   = isStamps ? cycles.some(c => c.free > 0) : current >= required;
                     const pct         = required > 0 ? Math.min(100, Math.round((current / required) * 100)) : 0;
-                    const missing     = Math.max(0, required - current);
+                    // Stamps: the cycle closest to a free unit.
+                    const closest     = cycles.reduce<StampCycle | null>((best, c) =>
+                      !best || c.requiredUnits - c.unitsAvailable < best.requiredUnits - best.unitsAvailable ? c : best, null);
+                    const missing     = isStamps
+                      ? Math.max(0, (closest?.requiredUnits ?? required) - (closest?.unitsAvailable ?? 0))
+                      : Math.max(0, required - current);
                     const name        = rewardName(item);
                     const icon        = isDiscount || isPct ? '💰' : '🎁';
                     return (
@@ -481,21 +520,9 @@ export default function RewardsCheckPage({ onBack }: Props) {
                             ? <p className="text-slate-500 text-sm mt-1">Compra {required} y llévate 1 más gratis</p>
                             : item.description && <p className="text-slate-500 text-sm mt-1">{item.description}</p>}
                           {isStamps ? (
-                            /* Stamps: N paid + 1 free */
-                            <div className="mt-3 flex items-center gap-2">
-                              {Array.from({ length: required }, (_, i) => {
-                                const filled = i < current;
-                                return (
-                                  <div key={i} className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-lg border-2 ${filled ? 'bg-[#1E3A8A] border-[#1E3A8A] text-white' : 'bg-white border-dashed border-slate-300 text-slate-300'}`}>
-                                    {filled ? <Star className="w-5 h-5 fill-yellow-300 text-yellow-300" /> : i + 1}
-                                  </div>
-                                );
-                              })}
-                              <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
-                              <div className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-2 ${canRedeem ? 'bg-green-500 border-green-500 text-white animate-pulse' : 'bg-amber-50 border-amber-300 text-amber-500'}`}>
-                                <Gift className="w-5 h-5" />
-                                <span className="text-[9px] font-black leading-none mt-0.5">GRATIS</span>
-                              </div>
+                            /* Stamps per cycle: N paid + 1 free */
+                            <div className="mt-3 flex flex-col gap-3">
+                              {cycles.map(c => <StampRow key={c.key} cycle={c} />)}
                             </div>
                           ) : (
                           <div className="mt-3 flex items-center gap-2">
@@ -516,7 +543,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                               </span>
                             : <p className="text-slate-500 text-sm mt-1.5">
                                 {isStamps
-                                  ? <>Te {missing === 1 ? 'falta' : 'faltan'} <strong className="text-[#1E3A8A]">{missing}</strong> para tu gratis</>
+                                  ? <>Te {missing === 1 ? 'falta' : 'faltan'} <strong className="text-[#1E3A8A]">{missing}</strong> para tu gratis{closest?.label ? ` (${closest.label})` : ''}</>
                                   : <>Te faltan <strong className="text-[#1E3A8A]">{fmt(missing)} pts</strong></>}
                               </p>
                           }
@@ -660,9 +687,6 @@ export default function RewardsCheckPage({ onBack }: Props) {
         )}
       </div>
 
-      {showRegisterCard && client && (
-        <RegisterCardSheet clientId={client.clientId} onClose={() => setShowRegisterCard(false)} />
-      )}
       {showTopUp && client && (
         <TopUpSheet
           clientId={client.clientId}
