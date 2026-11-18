@@ -157,7 +157,7 @@ export default function ReservationPage({ onBack }: { onBack: () => void }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#0a2d6e] to-[#1a4fa0] px-5 py-4 flex items-center gap-3 shrink-0">
+      <div className="gmo-brand-bg px-5 py-4 flex items-center gap-3 shrink-0">
         <button onClick={onBack} className="text-white/80 hover:text-white transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </button>

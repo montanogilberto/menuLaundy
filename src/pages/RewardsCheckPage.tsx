@@ -9,11 +9,45 @@ import {
 } from 'lucide-react';
 import {
   findClientByPhone, getBalance, getLedger, getCatalog, getProductCounts, getRedemptions, getLaundryBalance,
-  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry, ProductCount, Redemption, stampUnits,
+  ClientInfo, RewardsBalance, CatalogItem as RewardsCatalogItem, LedgerEntry, ProductCount, Redemption, StampCycle, stampUnits, stampCycles,
 } from '../api/rewards';
 import { useClientSession, saveClientSession, clearClientSession } from '../lib/clientSession';
+import { getCompanyName, getTopUpOptions, type TransferAccount } from '../api/walletTopUp';
+import TopUpSheet, { STRIPE_PK } from '../components/TopUpSheet';
 
 interface Props { onBack: () => void; }
+
+/** One stamp row (a cycle, or the whole card): N stamps → GRATIS, plus free units earned. */
+function StampRow({ cycle }: { cycle: StampCycle }) {
+  const ready = cycle.free > 0;
+  // Past a full card, show this card's progress toward the next free unit.
+  const filled = ready ? cycle.requiredUnits : cycle.unitsAvailable;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {cycle.label && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-slate-700 font-bold text-sm">{cycle.label}</p>
+          <span className={`text-xs font-black shrink-0 ${ready ? 'text-green-600' : 'text-slate-500'}`}>
+            {ready ? `${cycle.free} gratis` : `${cycle.unitsAvailable} / ${cycle.requiredUnits}`}
+          </span>
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {Array.from({ length: cycle.requiredUnits }, (_, i) => (
+          <div key={i} className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm border-2 ${i < filled ? 'bg-[#1E3A8A] border-[#1E3A8A] text-white' : 'bg-white border-dashed border-slate-300 text-slate-300'}`}>
+            {i < filled ? <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" /> : i + 1}
+          </div>
+        ))}
+        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+        <div className={`w-10 h-10 rounded-full flex flex-col items-center justify-center border-2 ${ready ? 'bg-green-500 border-green-500 text-white' : 'bg-amber-50 border-amber-300 text-amber-500'}`}>
+          <Gift className="w-4 h-4" />
+          <span className="text-[8px] font-black leading-none mt-0.5">GRATIS</span>
+        </div>
+        {!cycle.label && ready && <span className="text-green-600 text-xs font-black ml-1">{cycle.free} gratis</span>}
+      </div>
+    </div>
+  );
+}
 type Step = 'input' | 'loading' | 'result' | 'not_found' | 'error';
 
 // Badge per ledger txType / redemption status (same labels as the POS client view)
@@ -61,6 +95,11 @@ export default function RewardsCheckPage({ onBack }: Props) {
   const [productCounts, setProductCounts] = useState<ProductCount[]>([]);
   const [redemptions, setRedemptions]     = useState<Redemption[]>([]);
   const [wallet, setWallet]               = useState<number | null>(null);
+  const [companyName, setCompanyName]     = useState('');
+  const [canTopUp, setCanTopUp]           = useState(false);
+  const [showTopUp, setShowTopUp]         = useState(false);
+  const [transferAccount, setTransferAccount] = useState<TransferAccount | null>(null);
+  const [topUpNote, setTopUpNote]         = useState('');
   const [showAllPurchases, setShowAllPurchases] = useState(false);
   const [showAllActivity, setShowAllActivity]   = useState(false);
   const [errMsg, setErrMsg]           = useState('');
@@ -100,6 +139,8 @@ export default function RewardsCheckPage({ onBack }: Props) {
       ]);
       setClient(found); setBalance(bal); setLedger(led); setCatalog(cat); setProductCounts(counts);
       setRedemptions(reds); setWallet(wal);
+      getCompanyName().then(setCompanyName).catch(() => {});
+      getTopUpOptions().then((o) => { setCanTopUp(o.card && !!STRIPE_PK); setTransferAccount(o.transferAccount); }).catch(() => {});
       setStep('result');
     } catch (e: any) {
       setErrMsg(e?.message ?? 'Error de conexión'); setStep('error');
@@ -177,12 +218,10 @@ export default function RewardsCheckPage({ onBack }: Props) {
   const visiblePurchases = showAllPurchases ? purchases : purchases.slice(0, LIST_PREVIEW);
   const visibleActivity  = showAllActivity ? activity : activity.slice(0, LIST_PREVIEW);
 
-  // Free services earned on 3+1 cards: every `requiredUnits` purchases of that product = 1 free
+  // Free services earned on stamp cards, counted per cycle: 4 Básico = 1 free Básico.
   const freeFor = (item: RewardsCatalogItem) => {
-    const units = stampUnits(item);
-    if (item.rewardType !== 'free_product' || item.freeProductId == null || !units) return 0;
-    const bought = productCounts.find(p => p.productId === item.freeProductId)?.unitsAvailable ?? 0;
-    return Math.floor(bought / units);
+    if (item.rewardType !== 'free_product' || item.freeProductId == null || !stampUnits(item)) return 0;
+    return stampCycles(item, productCounts).reduce((n, c) => n + c.free, 0);
   };
   const totalFree = catalog.reduce((n, item) => n + freeFor(item), 0);
 
@@ -191,13 +230,13 @@ export default function RewardsCheckPage({ onBack }: Props) {
     <div className="min-h-screen flex flex-col bg-[#f0f4fa]">
 
       {/* ── TOP NAV ── */}
-      <div className="bg-[#0a2d6e] px-3 sm:px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center gap-2 sm:gap-3 shrink-0 sticky top-0 z-20">
+      <div className="gmo-brand-bg px-3 sm:px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center gap-2 sm:gap-3 shrink-0 sticky top-0 z-20">
         <button onClick={onBack} className="text-white/70 hover:text-white transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-2 flex-1">
           <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0">
-            <WashingMachine className="w-5 h-5 text-[#0a2d6e]" />
+            <WashingMachine className="w-5 h-5 text-[#1E3A8A]" />
           </div>
           <div className="leading-none">
             <p className="text-white font-black text-xs sm:text-sm leading-tight">LAVANDERÍA Y<br/>AUTO-SERVICIO</p>
@@ -234,7 +273,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
           <div className="max-w-md mx-auto flex flex-col items-center gap-5 sm:gap-6 pt-8 sm:pt-16 px-4 sm:px-6">
             <div className="text-6xl sm:text-7xl">📱</div>
             <div className="text-center">
-              <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">Consulta tus puntos</h2>
+              <h2 className="text-[#1E3A8A] font-black text-2xl sm:text-3xl">Consulta tus puntos</h2>
               <p className="text-slate-500 text-base mt-1">Ingresa tu número de teléfono</p>
             </div>
             <div className="w-full flex flex-col gap-3">
@@ -257,7 +296,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
               <button
                 onClick={handleSearch}
                 disabled={phone.replace(/\D/g, '').length < 10}
-                className="flex items-center justify-center gap-2 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-lg sm:text-xl rounded-2xl py-3.5 sm:py-4 min-h-[52px] transition-all shadow-lg sm:hover:scale-105 active:scale-95"
+                className="flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-lg sm:text-xl rounded-2xl py-3.5 sm:py-4 min-h-[52px] transition-all shadow-lg sm:hover:scale-105 active:scale-95"
               >
                 <Search className="w-5 h-5" /> CONSULTAR
               </button>
@@ -277,9 +316,9 @@ export default function RewardsCheckPage({ onBack }: Props) {
         {step === 'not_found' && (
           <div className="max-w-md mx-auto text-center pt-8 sm:pt-16 flex flex-col items-center gap-4 sm:gap-5 px-4 sm:px-6">
             <div className="text-6xl sm:text-8xl">😕</div>
-            <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">No encontrado</h2>
+            <h2 className="text-[#1E3A8A] font-black text-2xl sm:text-3xl">No encontrado</h2>
             <p className="text-slate-500 text-lg break-words">No hallamos una cuenta con el número <strong>{phone}</strong>. Pregunta en caja para registrarte.</p>
-            <button onClick={clearView} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4 hover:bg-blue-800 transition-all">
+            <button onClick={clearView} className="w-full sm:w-auto bg-[#2563EB] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4 hover:bg-blue-800 transition-all">
               Intentar de nuevo
             </button>
           </div>
@@ -289,9 +328,9 @@ export default function RewardsCheckPage({ onBack }: Props) {
         {step === 'error' && (
           <div className="max-w-md mx-auto text-center pt-8 sm:pt-16 flex flex-col items-center gap-4 sm:gap-5 px-4 sm:px-6">
             <div className="text-6xl sm:text-8xl">⚠️</div>
-            <h2 className="text-[#0a2d6e] font-black text-2xl sm:text-3xl">Error de conexión</h2>
+            <h2 className="text-[#1E3A8A] font-black text-2xl sm:text-3xl">Error de conexión</h2>
             <p className="text-red-500 break-words">{errMsg}</p>
-            <button onClick={clearView} className="w-full sm:w-auto bg-[#0a2d6e] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4">Volver</button>
+            <button onClick={clearView} className="w-full sm:w-auto bg-[#2563EB] text-white font-black text-lg sm:text-xl rounded-2xl px-10 py-3.5 sm:py-4">Volver</button>
           </div>
         )}
 
@@ -300,7 +339,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
           <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3 sm:gap-4">
 
             {/* Welcome hero */}
-            <div className="bg-gradient-to-r from-[#1565c0] to-[#0a2d6e] rounded-3xl p-4 sm:p-5 flex flex-wrap items-center gap-3 sm:gap-4 shadow-xl">
+            <div className="bg-gradient-to-r from-[#1565c0] to-[#1E3A8A] rounded-3xl p-4 sm:p-5 flex flex-wrap items-center gap-3 sm:gap-4 shadow-xl">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-400/30 rounded-full flex items-center justify-center shrink-0">
                 <User className="w-7 h-7 sm:w-9 sm:h-9 text-white" />
               </div>
@@ -308,7 +347,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 <h2 className="text-white font-black text-2xl md:text-3xl break-words">¡Hola, {client.first_name}!</h2>
                 <p className="text-blue-200 text-sm">Aquí tienes un resumen de tu actividad y puntos.</p>
               </div>
-              <div className="bg-[#0a2d6e]/60 rounded-2xl px-4 py-3 text-center shrink-0 border border-white/20 w-full sm:w-auto flex sm:block items-center justify-between gap-2">
+              <div className="bg-[#1E3A8A]/60 rounded-2xl px-4 py-3 text-center shrink-0 border border-white/20 w-full sm:w-auto flex sm:block items-center justify-between gap-2">
                 <p className="text-yellow-300 font-bold text-xs uppercase tracking-wide">Mis Puntos</p>
                 <div className="flex items-center gap-1 justify-center sm:my-1">
                   <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
@@ -358,25 +397,42 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 <Wallet className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-slate-500 text-sm font-semibold">Saldo lavandería</p>
+                <p className="text-slate-500 text-sm font-semibold">{companyName ? `Saldo ${companyName}` : 'Tu saldo'}</p>
                 {wallet != null
                   ? <p className="text-slate-900 font-black text-3xl leading-tight">{fmtMXN(wallet)}</p>
                   : <p className="text-slate-400 text-sm">No se pudo cargar el saldo.</p>}
-                <p className="text-slate-400 text-xs mt-0.5">Recarga en caja. Se usa al escanear tu QR en la lavadora.</p>
+                <p className="text-slate-400 text-xs mt-0.5">Recarga en caja{canTopUp ? ' o con tarjeta' : ''}. Se usa al escanear tu QR en la máquina.</p>
+                {topUpNote && <p className="text-green-700 text-xs font-semibold mt-1">{topUpNote}</p>}
               </div>
+              {canTopUp && (
+                <button onClick={() => setShowTopUp(true)} className="shrink-0 bg-green-500 text-white font-bold rounded-xl px-3 py-2 text-sm">
+                  Recargar
+                </button>
+              )}
             </div>
+
+            {transferAccount && (
+              <div className="bg-white rounded-2xl p-4 shadow">
+                <p className="text-slate-900 font-bold">Recarga por transferencia</p>
+                <p className="text-slate-500 text-sm mt-1">Titular: <span className="text-slate-900">{transferAccount.holderName}</span></p>
+                <p className="text-slate-500 text-sm">CLABE: <span className="text-slate-900 break-all">{transferAccount.clabe}</span></p>
+                {transferAccount.bankName && <p className="text-slate-500 text-sm">Banco: <span className="text-slate-900">{transferAccount.bankName}</span></p>}
+                {transferAccount.terminalName && <p className="text-slate-500 text-sm">Terminal: <span className="text-slate-900">{transferAccount.terminalName}</span></p>}
+                <p className="text-slate-400 text-xs mt-1">Después manda tu comprobante por WhatsApp o muéstralo en caja.</p>
+              </div>
+            )}
 
             {/* QR — near the top, like the POS client view */}
             <div className="bg-white rounded-2xl shadow p-4 flex flex-wrap sm:flex-nowrap items-center gap-4">
               <button onClick={() => setShowQR(true)} className="shrink-0 mx-auto sm:mx-0 p-2 border border-slate-100 rounded-xl hover:opacity-80 transition-opacity">
-                <ClientQrCode clientId={client.clientId} size={150} fgColor="#0a2d6e" level="M" />
+                <ClientQrCode clientId={client.clientId} size={150} fgColor="#1E3A8A" level="M" />
               </button>
               <div className="flex-1 min-w-0 basis-full sm:basis-auto text-center sm:text-left">
-                <p className="text-[#0a2d6e] font-black text-lg">Tu código QR</p>
+                <p className="text-[#1E3A8A] font-black text-lg">Tu código QR</p>
                 <p className="text-slate-500 text-sm mt-1">Muéstralo en caja para acumular o canjear puntos, o escanéalo en la lavadora.</p>
                 <button
                   onClick={() => setShowQR(true)}
-                  className="mt-3 w-full min-h-[44px] flex items-center justify-center gap-2 border-2 border-solid border-[#0a2d6e] text-[#0a2d6e] hover:bg-blue-50 font-black rounded-xl"
+                  className="mt-3 w-full min-h-[44px] flex items-center justify-center gap-2 border-2 border-solid border-[#1E3A8A] text-[#1E3A8A] hover:bg-blue-50 font-black rounded-xl"
                 >
                   <Maximize2 className="w-5 h-5" /> Mostrar grande
                 </button>
@@ -386,7 +442,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             {/* Points summary */}
             <div ref={pointsRef} className="bg-white rounded-2xl shadow p-4 scroll-mt-20">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[#0a2d6e] font-black text-lg">Mis puntos</h3>
+                <h3 className="text-[#1E3A8A] font-black text-lg">Mis puntos</h3>
                 <button onClick={() => goTo('catalog')} className="text-blue-600 text-sm font-bold flex items-center gap-1">
                   <Gift className="w-4 h-4" /> Recompensas
                 </button>
@@ -412,22 +468,28 @@ export default function RewardsCheckPage({ onBack }: Props) {
             {catalog.length > 0 && (
               <div ref={catalogRef} className="bg-white rounded-2xl shadow overflow-hidden scroll-mt-20">
                 <div className="px-4 py-3 border-b border-slate-100">
-                  <h3 className="text-[#0a2d6e] font-black text-lg">Catálogo de Recompensas</h3>
+                  <h3 className="text-[#1E3A8A] font-black text-lg">Catálogo de Recompensas</h3>
                 </div>
                 <div className="divide-y divide-slate-50">
                   {catalog.map(item => {
                     const isStamps    = item.rewardType === 'free_product' && item.freeProductId != null;
                     const isDiscount  = item.rewardType === 'discount_fixed';
                     const isPct       = item.rewardType === 'discount_pct';
-                    // For stamp cards: use per-product purchase count; for discount/points: use global balance
-                    const productRow  = isStamps ? productCounts.find(p => p.productId === item.freeProductId) : undefined;
-                    const current     = isStamps
-                      ? (productRow?.unitsAvailable ?? 0)
-                      : (balance?.balance ?? 0);
+                    // Stamp cards count per cycle; discount/points use the points balance.
+                    // An empty "no cycle" row is noise for the customer when the card has cycles.
+                    const cycles      = isStamps
+                      ? stampCycles(item, productCounts).filter((c, _, all) => c.label !== 'Sin ciclo registrado' || c.unitsAvailable > 0 || all.length === 1)
+                      : [];
+                    const current     = isStamps ? 0 : (balance?.balance ?? 0);
                     const required    = isStamps ? stampUnits(item) : item.requiredPoints;
-                    const canRedeem   = current >= required;
+                    const canRedeem   = isStamps ? cycles.some(c => c.free > 0) : current >= required;
                     const pct         = required > 0 ? Math.min(100, Math.round((current / required) * 100)) : 0;
-                    const missing     = Math.max(0, required - current);
+                    // Stamps: the cycle closest to a free unit.
+                    const closest     = cycles.reduce<StampCycle | null>((best, c) =>
+                      !best || c.requiredUnits - c.unitsAvailable < best.requiredUnits - best.unitsAvailable ? c : best, null);
+                    const missing     = isStamps
+                      ? Math.max(0, (closest?.requiredUnits ?? required) - (closest?.unitsAvailable ?? 0))
+                      : Math.max(0, required - current);
                     const name        = rewardName(item);
                     const icon        = isDiscount || isPct ? '💰' : '🎁';
                     return (
@@ -443,7 +505,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
                                 {required}+1<br/><span className="text-[11px]">GRATIS</span>
                               </span>
                             ) : (
-                              <span className={`flex items-center gap-1 font-black text-2xl leading-none px-3 py-1.5 rounded-xl shrink-0 ${canRedeem ? 'bg-green-500 text-white' : 'bg-[#0a2d6e] text-white'}`}>
+                              <span className={`flex items-center gap-1 font-black text-2xl leading-none px-3 py-1.5 rounded-xl shrink-0 ${canRedeem ? 'bg-green-500 text-white' : 'bg-[#2563EB] text-white'}`}>
                                 <Star className="w-5 h-5 fill-yellow-300 text-yellow-300" />{fmt(required)}
                               </span>
                             )}
@@ -458,31 +520,19 @@ export default function RewardsCheckPage({ onBack }: Props) {
                             ? <p className="text-slate-500 text-sm mt-1">Compra {required} y llévate 1 más gratis</p>
                             : item.description && <p className="text-slate-500 text-sm mt-1">{item.description}</p>}
                           {isStamps ? (
-                            /* Stamps: N paid + 1 free */
-                            <div className="mt-3 flex items-center gap-2">
-                              {Array.from({ length: required }, (_, i) => {
-                                const filled = i < current;
-                                return (
-                                  <div key={i} className={`w-11 h-11 rounded-full flex items-center justify-center font-black text-lg border-2 ${filled ? 'bg-[#0a2d6e] border-[#0a2d6e] text-white' : 'bg-white border-dashed border-slate-300 text-slate-300'}`}>
-                                    {filled ? <Star className="w-5 h-5 fill-yellow-300 text-yellow-300" /> : i + 1}
-                                  </div>
-                                );
-                              })}
-                              <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
-                              <div className={`w-12 h-12 rounded-full flex flex-col items-center justify-center border-2 ${canRedeem ? 'bg-green-500 border-green-500 text-white animate-pulse' : 'bg-amber-50 border-amber-300 text-amber-500'}`}>
-                                <Gift className="w-5 h-5" />
-                                <span className="text-[9px] font-black leading-none mt-0.5">GRATIS</span>
-                              </div>
+                            /* Stamps per cycle: N paid + 1 free */
+                            <div className="mt-3 flex flex-col gap-3">
+                              {cycles.map(c => <StampRow key={c.key} cycle={c} />)}
                             </div>
                           ) : (
                           <div className="mt-3 flex items-center gap-2">
                             <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full transition-all ${canRedeem ? 'bg-green-500' : 'bg-[#0a2d6e]'}`}
+                                className={`h-full rounded-full transition-all ${canRedeem ? 'bg-green-500' : 'bg-[#1E3A8A]'}`}
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
-                            <span className={`text-sm font-bold shrink-0 ${canRedeem ? 'text-green-600' : 'text-[#0a2d6e]'}`}>
+                            <span className={`text-sm font-bold shrink-0 ${canRedeem ? 'text-green-600' : 'text-[#1E3A8A]'}`}>
                               {fmt(current)}/{fmt(required)}
                             </span>
                           </div>
@@ -493,8 +543,8 @@ export default function RewardsCheckPage({ onBack }: Props) {
                               </span>
                             : <p className="text-slate-500 text-sm mt-1.5">
                                 {isStamps
-                                  ? <>Te {missing === 1 ? 'falta' : 'faltan'} <strong className="text-[#0a2d6e]">{missing}</strong> para tu gratis</>
-                                  : <>Te faltan <strong className="text-[#0a2d6e]">{fmt(missing)} pts</strong></>}
+                                  ? <>Te {missing === 1 ? 'falta' : 'faltan'} <strong className="text-[#1E3A8A]">{missing}</strong> para tu gratis{closest?.label ? ` (${closest.label})` : ''}</>
+                                  : <>Te faltan <strong className="text-[#1E3A8A]">{fmt(missing)} pts</strong></>}
                               </p>
                           }
                         </div>
@@ -504,15 +554,15 @@ export default function RewardsCheckPage({ onBack }: Props) {
                 </div>
                 {/* How to redeem: the cashier applies it in the POS after scanning the client QR */}
                 <div className="bg-blue-50 border-t border-blue-100 px-4 py-4">
-                  <p className="text-[#0a2d6e] font-black text-base mb-2">¿Cómo canjear?</p>
+                  <p className="text-[#1E3A8A] font-black text-base mb-2">¿Cómo canjear?</p>
                   <ol className="text-slate-600 text-sm space-y-1.5 mb-3">
-                    <li><strong className="text-[#0a2d6e]">1.</strong> Ve a caja y di qué servicio gratis quieres usar.</li>
-                    <li><strong className="text-[#0a2d6e]">2.</strong> Muestra tu código QR al cajero.</li>
-                    <li><strong className="text-[#0a2d6e]">3.</strong> El cajero aplica tu recompensa y se descuenta de tu cuenta.</li>
+                    <li><strong className="text-[#1E3A8A]">1.</strong> Ve a caja y di qué servicio gratis quieres usar.</li>
+                    <li><strong className="text-[#1E3A8A]">2.</strong> Muestra tu código QR al cajero.</li>
+                    <li><strong className="text-[#1E3A8A]">3.</strong> El cajero aplica tu recompensa y se descuenta de tu cuenta.</li>
                   </ol>
                   <button
                     onClick={() => setShowQR(true)}
-                    className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-[#0a2d6e] hover:bg-blue-800 text-white font-black rounded-xl"
+                    className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black rounded-xl"
                   >
                     <Maximize2 className="w-5 h-5" /> Mostrar mi QR
                   </button>
@@ -530,14 +580,14 @@ export default function RewardsCheckPage({ onBack }: Props) {
                   <X className="w-6 h-6 text-slate-600" />
                 </button>
                 <div className="flex flex-col items-center gap-2">
-                  <p className="text-[#0a2d6e] font-black text-xl sm:text-2xl text-center break-words">{client.first_name} {client.last_name}</p>
+                  <p className="text-[#1E3A8A] font-black text-xl sm:text-2xl text-center break-words">{client.first_name} {client.last_name}</p>
                   <p className="text-slate-400 text-sm">Cliente #{client.clientId}</p>
                 </div>
-                <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-[#0a2d6e]">
+                <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-[#1E3A8A]">
                   <ClientQrCode
                     clientId={client.clientId}
                     size={Math.min(window.innerWidth - 96, window.innerHeight - 320, 320)}
-                    fgColor="#0a2d6e"
+                    fgColor="#1E3A8A"
                     level="H"
                   />
                 </div>
@@ -559,7 +609,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             <div className="flex flex-col gap-3 sm:gap-4 min-w-0">
               <div className="bg-white rounded-2xl shadow overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-100">
-                  <h3 className="text-[#0a2d6e] font-black text-lg">Compras ({purchases.length})</h3>
+                  <h3 className="text-[#1E3A8A] font-black text-lg">Compras ({purchases.length})</h3>
                 </div>
                 {purchases.length === 0 ? (
                   <p className="text-slate-400 text-sm text-center py-6">Sin compras registradas con puntos.</p>
@@ -586,7 +636,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
 
               <div ref={activityRef} className="bg-white rounded-2xl shadow overflow-hidden scroll-mt-20">
                 <div className="px-4 py-3 border-b border-slate-100">
-                  <h3 className="text-[#0a2d6e] font-black text-lg">Actividad de puntos</h3>
+                  <h3 className="text-[#1E3A8A] font-black text-lg">Actividad de puntos</h3>
                 </div>
                 {activity.length === 0 ? (
                   <p className="text-slate-400 text-sm text-center py-6">Sin movimientos de puntos.</p>
@@ -625,7 +675,7 @@ export default function RewardsCheckPage({ onBack }: Props) {
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
               <div className="text-3xl">🎁</div>
               <div className="flex-1 min-w-0">
-                <p className="text-[#0a2d6e] font-black text-sm">¡Gana más con cada servicio!</p>
+                <p className="text-[#1E3A8A] font-black text-sm">¡Gana más con cada servicio!</p>
                 <p className="text-blue-400 text-xs">Tus puntos son la llave a grandes recompensas.</p>
               </div>
               <button onClick={() => goTo('catalog')} className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center justify-center gap-1 shrink-0 w-full sm:w-auto">
@@ -637,6 +687,17 @@ export default function RewardsCheckPage({ onBack }: Props) {
         )}
       </div>
 
+      {showTopUp && client && (
+        <TopUpSheet
+          clientId={client.clientId}
+          onClose={() => setShowTopUp(false)}
+          onDone={(message) => {
+            setShowTopUp(false);
+            setTopUpNote(message);
+            getLaundryBalance(client.clientId).then(setWallet).catch(() => {});
+          }}
+        />
+      )}
     </div>
   );
 }

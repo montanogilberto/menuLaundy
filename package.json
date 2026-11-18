@@ -18,6 +18,8 @@
     "@ionic/react": "^8.8.8",
     "@ionic/react-router": "^8.8.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@stripe/react-stripe-js": "^6.6.0",
+    "@stripe/stripe-js": "^9.8.0",
     "@supabase/supabase-js": "^2.57.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

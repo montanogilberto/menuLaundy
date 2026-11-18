@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Phone, Loader2, AlertCircle, LogIn, ArrowLeft } from 'lucide-react';
+import { Phone, Loader2, AlertCircle, LogIn, ArrowLeft, ChevronRight } from 'lucide-react';
 import logo from '../assets/logo_white.jpeg';
 import { findClientByPhone } from '../api/rewards';
 import { saveClientSession } from '../lib/clientSession';
+import GmoAppTiles from '../components/GmoAppTiles';
+import { LOGIN_APPS, POS_LOGIN_URL } from '../data/gmoApps';
 
 const COUNTRY_CODES = [
   { flag: '🇲🇽', label: 'MX', code: '+52' },
@@ -49,27 +51,33 @@ export default function LoginPage({ reason, afterLogin = 'stay' }: Props) {
   }
 
   return (
-    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 flex flex-col items-center justify-center px-4 py-[max(2rem,env(safe-area-inset-top))]">
+    <div className="min-h-screen overflow-y-auto gmo-brand-bg flex flex-col items-center justify-center px-4 py-[max(2rem,env(safe-area-inset-top))]">
       <div className="w-full max-w-sm flex flex-col items-center gap-6">
 
         {/* Brand */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <img src={logo} alt="GMO Lavandería" className="w-24 h-24 rounded-3xl object-contain bg-white shadow-xl" />
-          <h1 className="text-white font-black text-2xl leading-tight uppercase tracking-wide">
-            Lavandería Y<br />Auto&#8209;Servicio
+          <img src={logo} alt="GMO Lavandería" className="w-20 h-20 rounded-3xl object-contain bg-white shadow-xl" />
+          <h1 className="text-white font-bold text-2xl leading-tight">
+            Lavandería y Auto&#8209;Servicio
           </h1>
-          <p className="text-blue-200 text-base">
-            Inicia sesión con tu número de celular{reason ? ` ${reason}` : ''}
-          </p>
         </div>
+
+        <GmoAppTiles apps={LOGIN_APPS} active="rewards" className="w-full grid-cols-4" />
 
         {/* Form */}
         <form
           onSubmit={e => { e.preventDefault(); handleLogin(); }}
-          className="w-full bg-white rounded-3xl shadow-2xl p-5 flex flex-col gap-4"
+          className="w-full bg-white rounded-3xl shadow-2xl p-6 flex flex-col gap-4"
         >
+          <div className="text-center">
+            <h2 className="text-gray-900 font-bold text-2xl">Iniciar sesión</h2>
+            <p className="text-gray-500 text-sm mt-1">
+              Ingresa con tu número de celular{reason ? ` ${reason}` : ''}
+            </p>
+          </div>
+
           <label className="flex items-center gap-2 text-slate-700 font-bold text-sm">
-            <Phone className="w-4 h-4 text-blue-600" /> Número de celular
+            <Phone className="w-4 h-4 text-[#2563EB]" /> Número de celular
           </label>
 
           <div className="flex rounded-xl border-2 border-blue-200 overflow-hidden">
@@ -79,7 +87,7 @@ export default function LoginPage({ reason, afterLogin = 'stay' }: Props) {
                 type="button"
                 onClick={() => setCountry(c.label)}
                 className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-sm font-bold transition-colors
-                  ${country === c.label ? 'bg-[#0a2d6e] text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                  ${country === c.label ? 'bg-[#2563EB] text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
               >
                 <span>{c.flag}</span>
                 <span>{c.label === 'MX' ? c.code : c.label}</span>
@@ -95,7 +103,7 @@ export default function LoginPage({ reason, afterLogin = 'stay' }: Props) {
             autoFocus
             value={phone}
             onChange={e => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); }}
-            placeholder="10 dígitos — Ej. 6621234567"
+            placeholder="Ej. 6621234567"
             className="w-full border-2 border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3.5 text-xl font-semibold text-slate-800 outline-none transition-colors"
           />
 
@@ -108,15 +116,24 @@ export default function LoginPage({ reason, afterLogin = 'stay' }: Props) {
           <button
             type="submit"
             disabled={!valid || loading}
-            className="w-full min-h-[52px] flex items-center justify-center gap-2 bg-[#0a2d6e] hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-lg rounded-xl transition-colors active:scale-[0.98]"
+            className="w-full min-h-[52px] flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-lg rounded-xl transition-colors active:scale-[0.98]"
           >
             {loading
               ? <><Loader2 className="w-5 h-5 animate-spin" /> Verificando…</>
               : <><LogIn className="w-5 h-5" /> Entrar</>}
           </button>
+
+          <a
+            href={POS_LOGIN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1 bg-blue-50 text-[#2563EB] text-sm font-bold rounded-xl px-3 py-3"
+          >
+            ¿Eres empleado? Inicia sesión con usuario <ChevronRight className="w-4 h-4 shrink-0" />
+          </a>
         </form>
 
-        <p className="text-blue-300/80 text-xs text-center">
+        <p className="text-white/75 text-xs text-center">
           Tu sesión se mantiene activa en este dispositivo por 30 días.
         </p>
 
