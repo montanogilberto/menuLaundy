@@ -1,9 +1,11 @@
 import { useHistory } from 'react-router-dom';
-import { Bell, LogIn, LogOut, User } from 'lucide-react';
+import { Headset, LogIn, LogOut, User } from 'lucide-react';
+import AlertsBell from './AlertsBell';
 import logo from '../assets/logo_white.jpeg';
 import GmoAppTiles from './GmoAppTiles';
 import { HEADER_APPS } from '../data/gmoApps';
 import { useClientSession, clearClientSession } from '../lib/clientSession';
+import { SUPPORT_WHATSAPP_URL } from '../data/services';
 
 export default function Header() {
   const history = useHistory();
@@ -12,7 +14,7 @@ export default function Header() {
   return (
     <header className="gmo-brand-bg flex-shrink-0">
       <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 md:px-8 py-2.5 md:py-3 pt-[max(0.625rem,env(safe-area-inset-top))] flex flex-col gap-2.5">
-        <div className="flex items-center gap-2.5 sm:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-4">
           {/* Logo */}
           <img
             src={logo}
@@ -33,15 +35,20 @@ export default function Header() {
           {/* Apps (wide screens: same row) */}
           <GmoAppTiles apps={HEADER_APPS} className="hidden xl:grid grid-cols-5 w-[30rem] shrink-0" />
 
-          {/* Alerts */}
-          <button
-            onClick={() => history.push(session ? '/puntos' : '/login')}
-            aria-label="Alertas"
-            className="relative p-2 rounded-full text-white hover:bg-white/10 shrink-0"
+          {/* Support: the store's WhatsApp (answered by the WhatsApp agent / staff) */}
+          <a
+            href={SUPPORT_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Soporte por WhatsApp"
+            title="Soporte"
+            className="p-1.5 sm:p-2 rounded-full text-white hover:bg-white/10 shrink-0"
           >
-            <Bell className="w-6 h-6" />
-            {session && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-blue-700" />}
-          </button>
+            <Headset className="w-5 h-5 sm:w-6 sm:h-6" />
+          </a>
+
+          {/* Alerts: rewards ready, points, redemptions, low balance */}
+          <AlertsBell />
 
           {/* User: greeting + Salir, or Entrar */}
           {session ? (
@@ -63,7 +70,7 @@ export default function Header() {
           ) : (
             <button
               onClick={() => history.push('/login')}
-              className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-sm px-3 py-2 rounded-xl shadow shrink-0"
+              className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-sm px-2.5 sm:px-3 py-2 rounded-xl shadow shrink-0"
             >
               <LogIn className="w-4 h-4" /> Entrar
             </button>

@@ -87,6 +87,8 @@ export const extras = 'Ensueño Max • Vanish • Ariel • Persil • Foca •
 
 export const contactInfo = {
   phone: '+52 6626513670',
+  /** Business WhatsApp (Meta: "Lavandería GMO", the number tickets are sent from). The phone above is not on WhatsApp. */
+  whatsapp: '+52 662 468 8224',
   email: 'info@gmolavanderia.com',
   address: 'Blvd. Musaro 1 B, Nuevo Hermosillo, 83296 Hermosillo, Son.',
 };
@@ -100,7 +102,7 @@ export const businessHours = [
 export const socialLinks = [
   { name: 'Facebook', url: 'https://facebook.com/gmolavanderia', icon: 'Facebook' },
   { name: 'Instagram', url: 'https://instagram.com/gmolavanderia', icon: 'Instagram' },
-  { name: 'WhatsApp', url: 'https://wa.me/526626513670', icon: 'MessageCircle' },
+  { name: 'WhatsApp', url: 'https://wa.me/526624688224', icon: 'MessageCircle' },
 ];
 
 export const sampleTicket: Ticket = {
@@ -113,3 +115,7 @@ export const sampleTicket: Ticket = {
   ],
   note: 'Incluye: Lavado + Secado + Doblado + Jabón y Suavitel',
 };
+
+/** Store WhatsApp for support. Generic text on purpose: no name or phone in the link. */
+export const SUPPORT_WHATSAPP_URL =
+  `https://wa.me/${contactInfo.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Hola, necesito ayuda con mi cuenta de la lavandería.')}`;

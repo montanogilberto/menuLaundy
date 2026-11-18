@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ClientQrCode from '../components/ClientQrCode';
+import QrHowTo from '../components/QrHowTo';
 import { Phone, Loader2, AlertCircle, LogOut } from 'lucide-react';
 import { findClientByPhone } from '../api/rewardsCheckApi';
 import { ClientInfo } from '../api/rewards';
@@ -123,13 +124,15 @@ export default function QRPage() {
             <h2 className="text-xl font-black text-gray-800">
               {client.first_name} {client.last_name}
             </h2>
-            <p className="text-gray-500 text-sm">Muestra este QR en caja</p>
+            <p className="text-gray-500 text-sm">Muéstralo en caja o acércalo al lector de la máquina</p>
           </div>
 
           <div className="bg-white rounded-3xl shadow-xl p-6 flex flex-col items-center gap-4">
             <ClientQrCode clientId={client.clientId} size={240} level="H" />
             <p className="text-xs text-gray-400">Cliente #{client.clientId}</p>
           </div>
+
+          <QrHowTo defaultOpen />
 
           <button onClick={() => { clearClientSession(); reset(); }}
             className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
