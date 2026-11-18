@@ -2,7 +2,7 @@ import { cartOutline, walletOutline, gameControllerOutline, giftOutline, hardwar
 import { contactInfo } from './services';
 
 const POS_URL = import.meta.env.VITE_POS_URL;
-const STORE_WA = contactInfo.phone.replace(/\D/g, '');
+const STORE_WA = contactInfo.whatsapp.replace(/\D/g, '');
 
 export type GmoAppId = 'pos' | 'smartloans' | 'arcade' | 'rewards' | 'factory';
 

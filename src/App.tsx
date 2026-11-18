@@ -8,7 +8,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import { Route, Redirect } from 'react-router-dom';
 import {
   homeOutline, calendarOutline, qrCodeOutline,
-  starOutline, giftOutline,
+  chatbubbleEllipsesOutline, logoWhatsapp,
 } from 'ionicons/icons';
 
 import Header from './components/Header';
@@ -20,6 +20,9 @@ import QRPage from './pages/QRPage';
 import ReceiptModal from './components/ReceiptModal';
 import LoginPage from './pages/LoginPage';
 import RequireLogin from './components/RequireLogin';
+import SupportChatPage from './pages/SupportChatPage';
+import WhatsAppPage from './pages/WhatsAppPage';
+import { SUPPORT_WHATSAPP_URL } from './data/services';
 
 const RECEIPT_BASE = 'https://imageprofile.blob.core.windows.net/ticketspos/receipts';
 
@@ -96,6 +99,20 @@ function App() {
               </IonPage>
             </Route>
 
+            <Route exact path="/soporte">
+              <IonPage>
+                <SupportChatPage />
+              </IonPage>
+            </Route>
+
+            <Route exact path="/whatsapp">
+              <IonPage>
+                <IonContent fullscreen>
+                  <WhatsAppPage />
+                </IonContent>
+              </IonPage>
+            </Route>
+
             <Route exact path="/login">
               <IonPage>
                 <IonContent fullscreen>
@@ -125,14 +142,16 @@ function App() {
               <IonLabel>Mi QR</IonLabel>
             </IonTabButton>
 
-            <IonTabButton tab="puntos" href="/puntos">
-              <IonIcon icon={starOutline} />
-              <IonLabel>Mis Puntos</IonLabel>
+            {/* Mis Puntos / Recompensas stay at /puntos and /recompensas, reached from Inicio */}
+            <IonTabButton tab="soporte" href="/soporte">
+              <IonIcon icon={chatbubbleEllipsesOutline} />
+              <IonLabel>Soporte</IonLabel>
             </IonTabButton>
 
-            <IonTabButton tab="recompensas" href="/recompensas">
-              <IonIcon icon={giftOutline} />
-              <IonLabel>Recompensas</IonLabel>
+            {/* Opens WhatsApp on tap (user gesture, so no popup block); /whatsapp is the fallback page */}
+            <IonTabButton tab="whatsapp" href="/whatsapp" onClick={() => window.open(SUPPORT_WHATSAPP_URL, '_blank', 'noopener')}>
+              <IonIcon icon={logoWhatsapp} />
+              <IonLabel>WhatsApp</IonLabel>
             </IonTabButton>
           </IonTabBar>
         </IonTabs>
